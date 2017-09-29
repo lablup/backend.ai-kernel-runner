@@ -13,40 +13,59 @@ How to write a new computation kernel
 Inherit ``ai.backend.kernel.BaseRunner`` and implement the following methods:
 
 * ``async def init_with_loop(self)``
+
   - Called after the asyncio event loop becomes available.
+
   - Mostly just ``pass``.
+
   - If your kernel supports interactive user input, then put set
     ``self.user_input_queue`` as an ``asyncio.Queue`` object.  It's your job
     to utilize the queue object for waiting for the user input.  (See
     ``handle_input()`` method in ``ai/backend/kernel/python/inproc.py`` for
     reference)  If it's not set, then any attempts for getting interactive user
     input will simply return ``"<user-input is unsupported>"``.
+
 * ``async def build_heuristic(self)``
-  - (Batch mode) Write a heuristic code to find some build script or run a
+
+  - *(Batch mode)* Write a heuristic code to find some build script or run a
     good-enough build command for your language/runtime.
-  - (Blocking) You don't have to worry about overlapped execution since the
+
+  - *(Blocking)* You don't have to worry about overlapped execution since the
     base runner will take care of it.
+
 * ``async def execute_heuristic(self)``
-  - (Batch mode) Write a heuristic code to find the main program.
-  - (Blocking) You don't have to worry about overlapped execution since the
+
+  - *(Batch mode)* Write a heuristic code to find the main program.
+
+  - *(Blocking)* You don't have to worry about overlapped execution since the
     base runner will take care of it.
+
 * ``async def query(self, code_text)``
-  - (Query mode) Directly run the given code snippet. Depending on the language/runtime,
+
+  - *(Query mode)* Directly run the given code snippet. Depending on the language/runtime,
     you may need to create a temporary file and execute an external program.
-  - (Blocking) You don't have to worry about overlapped execution since the
+
+  - *(Blocking)* You don't have to worry about overlapped execution since the
     base runner will take care of it.
+
 * ``async def complete(self, data)``
-  - (Query mode) Take a dict data that includes the current line of code where
+
+  - *(Query mode)* Take a dict data that includes the current line of code where
     the user is typing and return a list of strings that can auto-complete it.
-  - (Non-blocking) You should implement this method to run asynchronously with
+
+  - *(Non-blocking)* You should implement this method to run asynchronously with
     ongoing code execution.
+
 * ``async def interrupt(self)``
-  - (Query mode) Send an interruption signal to the running program. The implementation
+
+  - *(Query mode)* Send an interruption signal to the running program. The implementation
     is up to you. The Python runner currently spawns a thread for in-process
     query-mode execution and use a ctypes hack to throw KeyboardInterrupt
     exception into it.
-  - (Non-blocking) You should implement this method to run asynchronously with
+
+  - *(Non-blocking)* You should implement this method to run asynchronously with
     ongoing code execution.
+
 
 NOTE: Existing codes are good referecnes!
 
