@@ -3,7 +3,6 @@ import asyncio
 from functools import partial
 import logging
 import logging.config
-from logging.handlers import QueueHandler
 import os
 import signal
 import sys
@@ -13,23 +12,9 @@ import uvloop
 import zmq
 import simplejson as json
 
+from .logging import setup_logger
+
 log = logging.getLogger()
-
-
-class OutsockHandler(QueueHandler):
-    def enqueue(self, record):
-        msg = self.formatter.format(record)
-        self.queue.write([
-            b'stderr',
-            (msg + '\n').encode('utf8'),
-        ])
-
-
-class BraceLogRecord(logging.LogRecord):
-    def getMessage(self):
-        if self.args is not None:
-            return self.msg.format(*self.args)
-        return self.msg
 
 
 async def pipe_output(stream, outsock, target):
@@ -201,19 +186,7 @@ class BaseRunner(ABC):
         self.outsock = await aiozmq.create_zmq_stream(zmq.PUSH, bind='tcp://*:2001')
         user_input_server = \
             await asyncio.start_server(self.handle_user_input, '127.0.0.1', 65000)
-
-        # configure logging to publish logs via outsock as well
-        loghandlers = [logging.StreamHandler()]
-        if not cmdargs.debug:
-            loghandlers.append(OutsockHandler(self.outsock))
-        logging.basicConfig(
-            level=logging.DEBUG if cmdargs.debug else logging.INFO,
-            format=self.log_prefix + ': {message}',
-            style='{',
-            handlers=loghandlers,
-        )
-        _factory = lambda *args, **kwargs: BraceLogRecord(*args, **kwargs)
-        logging.setLogRecordFactory(_factory)
+        setup_logger(self.outsock, self.log_prefix, cmdargs.debug)
 
         log.debug('start serving...')
         await self.init_with_loop()
