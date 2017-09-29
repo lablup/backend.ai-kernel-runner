@@ -17,6 +17,7 @@ from IPython.core.completer import Completer
 
 import getpass
 
+from .display import display
 from .types import (
     ConsoleRecord, MediaRecord, HTMLRecord,
 )
@@ -74,8 +75,9 @@ class PythonInprocRunner(threading.Thread):
             code_text = self.input_queue.get()
             self.input_queue.task_done()
 
-            # Set Sorna Media handler
+            # Set Backend.AI Media handler
             self.user_module.__builtins__._sorna_emit = self.emit
+            self.user_module.__builtins__.display = display
 
             # Override interactive input functions
             self.user_module.__builtins__.input = self.handle_input
