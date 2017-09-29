@@ -46,14 +46,14 @@ class Runner(BaseRunner):
         self._user_input_queue = janus.Queue(loop=self.loop)
         self.user_input_queue = self._user_input_queue.async_q
 
-    async def build(self, build_cmd):
+    async def build_heuristic(self):
         if Path('setup.py').is_file():
             cmd = f'python {DEFAULT_PYFLAGS} setup.py develop'
             await self.run_subproc(cmd)
         else:
             log.warning('skipping build phase due to missing "setup.py" file')
 
-    async def execute(self, exec_cmd):
+    async def execute_heuristic(self):
         if Path('main.py').is_file():
             cmd = f'python {DEFAULT_PYFLAGS} main.py'
             await self.run_subproc(cmd)
