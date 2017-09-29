@@ -7,12 +7,12 @@ import importlib
 
 lang_map = {
     'python': 'ai.backend.kernel.python.Runner',
-    'java': 'ai.backend.kernel.python.Runner',
     'c': 'ai.backend.kernel.c.Runner',
     'cpp': 'ai.backend.kernel.cpp.Runner',
+    'golang': 'ai.backend.kernel.golang.Runner',
     'rust': 'ai.backend.kernel.rust.Runner',
-    'go': 'ai.backend.kernel.golang.Runner',
-    'lua': 'ai.backend.kernel.lua.Runner',
+    'java': 'ai.backend.kernel.java.Runner',
+    'haskell': 'ai.backend.kernel.haskell.Runner',
 }
 
 
