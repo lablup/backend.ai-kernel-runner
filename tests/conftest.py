@@ -1,6 +1,10 @@
-import pytest
+import shlex
+import subprocess
 
+import aiozmq
+import pytest
 from six.moves import builtins
+import zmq
 
 from ai.backend.kernel.base import BaseRunner
 
@@ -34,3 +38,24 @@ def base_runner():
         return type('DummyConcrete' + abclass.__name__, (concreteCls,), {})
 
     return concreter(BaseRunner)()
+
+
+@pytest.fixture
+async def runner_proc():
+    """ Returns a process which runs kernel runner script and two zmq streams
+    for interacting with the runner process.
+    """
+    cmd = 'python -m ai.backend.kernel --debug c'
+    args = shlex.split(cmd)
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+
+    addr = f'tcp://127.0.0.1'
+    sender = await aiozmq.create_zmq_stream(zmq.PUSH, connect=f'{addr}:2000')
+    receiver = await aiozmq.create_zmq_stream(zmq.PULL, connect=f'{addr}:2001')
+
+    yield proc, sender, receiver
+
+    sender.close()
+    receiver.close()
+    proc.kill()
