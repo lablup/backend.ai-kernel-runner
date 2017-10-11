@@ -1,9 +1,17 @@
+import argparse
 import asyncio
+import multiprocessing
+import os
 import pytest
+import shlex
+import signal
+import subprocess
+import time
 
 import aiozmq
 import zmq
 
+from ai.backend.kernel import parse_args
 from ai.backend.kernel.base import pipe_output
 
 
@@ -55,4 +63,20 @@ class TestPipeOutput:
         with pytest.raises(AssertionError):
             await pipe_output(proc.stdout, outsock, 'invalid')
         await proc.wait()
+
+
+class TestBaseRunner:
+    @pytest.mark.parametrize('sig', [signal.SIGINT, signal.SIGTERM])
+    def test_interruption(self, sig):
+        cmd = 'python -m ai.backend.kernel --debug c'
+        args = shlex.split(cmd)
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        time.sleep(1)
+        proc.send_signal(sig)
+        try:
+            stdout, _ = proc.communicate(2)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        assert b'exit' in stdout
 
