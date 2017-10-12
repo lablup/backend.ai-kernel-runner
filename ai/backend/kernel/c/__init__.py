@@ -57,7 +57,6 @@ class Runner(BaseRunner):
             log.error('cannot find executable ("a.out" or "main").')
 
     async def query(self, code_text):
-        })
         with tempfile.NamedTemporaryFile(suffix='.c', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
