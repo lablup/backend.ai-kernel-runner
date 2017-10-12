@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 import shlex
-import sys
 import tempfile
 
 from .. import BaseRunner
@@ -37,8 +36,10 @@ class Runner(BaseRunner):
         if Path('main.cpp').is_file():
             cppfiles = Path('.').glob('**/*.cpp')
             cppfiles = ' '.join(map(lambda p: shlex.quote(str(p)), cppfiles))
-            cmd = (f'g++ {cppfiles} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS}; '
-                   f'./main')
+            cmd = (
+                f'g++ {cppfiles} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS};'
+                f'./main'
+            )
             await self.run_subproc(cmd)
         else:
             log.error('cannot find build script ("Makefile") '
@@ -56,8 +57,10 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.cpp', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = (f'g++ {tmpf.name} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS} '
-                   f'&& ./main')
+            cmd = (
+                f'g++ {tmpf.name} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS}'
+                f'&& ./main'
+            )
             await self.run_subproc(cmd)
 
     async def complete(self, data):

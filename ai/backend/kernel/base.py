@@ -4,6 +4,7 @@ from functools import partial
 import logging
 import logging.config
 import os
+from pathlib import Path
 import signal
 import sys
 
@@ -148,8 +149,10 @@ class BaseRunner(ABC):
             )
             self.subproc = proc
             pipe_tasks = [
-                loop.create_task(pipe_output(proc.stdout, self.outsock, 'stdout')),
-                loop.create_task(pipe_output(proc.stderr, self.outsock, 'stderr')),
+                loop.create_task(pipe_output(proc.stdout, self.outsock,
+                                             'stdout')),
+                loop.create_task(pipe_output(proc.stderr, self.outsock,
+                                             'stderr')),
             ]
             await proc.wait()
             for t in pipe_tasks:
@@ -182,10 +185,13 @@ class BaseRunner(ABC):
                 break
 
     async def main_loop(self, cmdargs):
-        self.insock = await aiozmq.create_zmq_stream(zmq.PULL, bind='tcp://*:2000')
-        self.outsock = await aiozmq.create_zmq_stream(zmq.PUSH, bind='tcp://*:2001')
+        self.insock = await aiozmq.create_zmq_stream(zmq.PULL,
+                bind='tcp://*:2000')
+        self.outsock = await aiozmq.create_zmq_stream(zmq.PUSH,
+                bind='tcp://*:2001')
         user_input_server = \
-            await asyncio.start_server(self.handle_user_input, '127.0.0.1', 65000)
+            await asyncio.start_server(self.handle_user_input,
+                    '127.0.0.1', 65000)
         setup_logger(self.outsock, self.log_prefix, cmdargs.debug)
 
         log.debug('start serving...')

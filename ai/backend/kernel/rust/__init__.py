@@ -1,8 +1,6 @@
 import logging
 import os
 from pathlib import Path
-import shlex
-import sys
 import tempfile
 
 from .. import BaseRunner
@@ -38,7 +36,8 @@ class Runner(BaseRunner):
         elif Path('main.rs').is_file():
             await self.run_subproc('rustc - -o main main.rs')
         else:
-            log.error('cannot find the main/build file ("Cargo.toml" or "main.rs").')
+            log.error(
+                'cannot find the main/build file ("Cargo.toml" or "main.rs").')
 
     async def execute_heuristic(self):
         out = find_executable('./target/debug', './target/release')

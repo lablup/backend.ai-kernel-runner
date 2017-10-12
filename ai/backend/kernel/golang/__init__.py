@@ -1,8 +1,6 @@
 import logging
-import os
 from pathlib import Path
 import shlex
-import sys
 import tempfile
 
 from .. import BaseRunner
@@ -16,7 +14,7 @@ CHILD_ENV = {
     'SHELL': '/bin/ash',
     'USER': 'work',
     'HOME': '/home/work',
-    'PATH': '/home/work/bin:/go/bin:/usr/local/go/bin:' + 
+    'PATH': '/home/work/bin:/go/bin:/usr/local/go/bin:' +
             '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
     'GOPATH': '/home/work',
 }

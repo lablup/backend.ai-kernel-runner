@@ -3,7 +3,6 @@ import logging
 import os
 from pathlib import Path
 import shlex
-import sys
 import tempfile
 
 from .. import BaseRunner
@@ -58,8 +57,6 @@ class Runner(BaseRunner):
             log.error('cannot find executable ("a.out" or "main").')
 
     async def query(self, code_text):
-        self.child_env.update({
-            'LD_PRELOAD': os.environ.get('LD_PRELOAD', '/home/sorna/patch-libs.so'),
         })
         with tempfile.NamedTemporaryFile(suffix='.c', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))

@@ -1,13 +1,8 @@
 import builtins as builtin_mod
 import code
-import enum
 from functools import partial
 import logging
-import os
-import queue
-import socket
 import sys
-import time
 import traceback
 import threading
 import types
@@ -24,6 +19,7 @@ from .types import (
 
 
 log = logging.getLogger()
+
 
 class StreamToEmitter:
 
@@ -42,8 +38,8 @@ class PythonInprocRunner(threading.Thread):
     '''
     A thin wrapper for REPL.
 
-    It creates a dummy module that user codes run and keeps the references to user-created objects
-    (e.g., variables and functions).
+    It creates a dummy module that user codes run and keeps the references to
+    user-created objects (e.g., variables and functions).
     '''
 
     def __init__(self, input_queue, output_queue, user_input_queue, sentinel):
@@ -60,7 +56,7 @@ class PythonInprocRunner(threading.Thread):
 
         # Initialize user module and namespaces.
         user_module = types.ModuleType('__main__',
-                                       doc='Automatically created module for the interactive shell.')
+                doc='Automatically created module for the interactive shell.')
         user_module.__dict__.setdefault('__builtin__', builtin_mod)
         user_module.__dict__.setdefault('__builtins__', builtin_mod)
         self.user_module = user_module
@@ -89,8 +85,10 @@ class PythonInprocRunner(threading.Thread):
                     ValueError, TypeError, MemoryError):
                 exc_type, exc_val, tb = sys.exc_info()
                 user_tb = type(self).strip_traceback(tb)
-                err_str = ''.join(traceback.format_exception(exc_type, exc_val, user_tb))
-                hdr_str = 'Traceback (most recent call last):\n' if not err_str.startswith('Traceback ') else ''
+                err_str = ''.join(traceback.format_exception(exc_type, exc_val,
+                                                             user_tb))
+                hdr_str = 'Traceback (most recent call last):\n' \
+                        if not err_str.startswith('Traceback ') else ''
                 self.emit(ConsoleRecord('stderr', hdr_str + err_str))
                 self.output_queue.put(self.sentinel)
             else:

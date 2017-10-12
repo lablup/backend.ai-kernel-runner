@@ -1,9 +1,6 @@
-import pytest
-
 import matplotlib
 matplotlib.use('module://ai.backend.kernel.python.matplotlib.ingen')
 import matplotlib.pyplot as plt
-from six.moves import builtins
 
 from ai.backend.kernel.python.matplotlib import ingen
 

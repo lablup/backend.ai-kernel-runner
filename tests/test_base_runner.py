@@ -1,19 +1,13 @@
-import aiozmq
-import argparse
 import asyncio
-import asynctest
-import multiprocessing
-import os
-import pytest
-import shlex
 import signal
 import subprocess
 import time
 
 import aiozmq
+import asynctest
+import pytest
 import zmq
 
-from ai.backend.kernel import parse_args
 from ai.backend.kernel.base import pipe_output
 
 
@@ -74,10 +68,10 @@ class TestBaseRunner:
     async def sockets(self):
         addr = f'tcp://127.0.0.1'
         sender = await aiozmq.create_zmq_stream(zmq.PUSH,
-                connect=f'{addr}:2000')
+                                                connect=f'{addr}:2000')
         receiver = await aiozmq.create_zmq_stream(zmq.PULL,
-                connect=f'{addr}:2001')
-        yield sender, receiver 
+                                                  connect=f'{addr}:2001')
+        yield sender, receiver
         sender.close()
         receiver.close()
 
@@ -139,7 +133,7 @@ class TestBaseRunner:
     async def test_run_subproc(self, base_runner):
         addr = 'tcp://127.0.0.1:2001'
         base_runner.outsock = await aiozmq.create_zmq_stream(zmq.PUSH,
-                bind=addr)
+                                                             bind=addr)
         observer = await aiozmq.create_zmq_stream(zmq.PULL, connect=addr)
 
         await base_runner.run_subproc('echo testing...')

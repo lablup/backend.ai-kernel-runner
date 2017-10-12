@@ -3,7 +3,6 @@ import os
 import re
 from pathlib import Path
 import shlex
-import sys
 import tempfile
 
 from .. import BaseRunner
@@ -14,7 +13,8 @@ JCC = 'javac'
 JCR = 'java'
 
 # Let Java respect container resource limits
-DEFAULT_JFLAGS = '-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -d .'
+DEFAULT_JFLAGS = ('-XX:+UnlockExperimentalVMOptions '
+                  '-XX:+UseCGroupMemoryLimitForHeap -d .')
 
 CHILD_ENV = {
     'TERM': 'xterm',
@@ -22,7 +22,9 @@ CHILD_ENV = {
     'SHELL': '/bin/ash',
     'USER': 'work',
     'HOME': '/home/work',
-    'PATH': '/usr/lib/jvm/java-1.8-openjdk/jre/bin:/usr/lib/jvm/java-1.8-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+    'PATH': ('/usr/lib/jvm/java-1.8-openjdk/jre/bin:'
+             '/usr/lib/jvm/java-1.8-openjdk/bin:/usr/local/sbin:'
+             '/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'),
     'LD_PRELOAD': os.environ.get('LD_PRELOAD', '/home/sorna/patch-libs.so'),
 }
 

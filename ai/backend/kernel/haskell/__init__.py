@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 import shlex
-import sys
 import tempfile
 
 from .. import BaseRunner
@@ -18,6 +17,7 @@ CHILD_ENV = {
     'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
     'LD_PRELOAD': os.environ.get('LD_PRELOAD', '/home/sorna/patch-libs.so'),
 }
+
 
 class Runner(BaseRunner):
 

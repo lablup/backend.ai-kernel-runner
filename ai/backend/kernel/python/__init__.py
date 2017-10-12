@@ -1,9 +1,7 @@
 import asyncio
 import ctypes
 import logging
-import os
 from pathlib import Path
-import sys
 import threading
 
 import janus
