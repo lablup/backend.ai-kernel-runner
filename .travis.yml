@@ -10,10 +10,10 @@ install:
   - pip install -U -r requirements-ci.txt
 script:
   - python -m flake8 ai/backend tests
-  - python -m pytest --cov=ai.backend.kernel
+  - python -m pytest -s --cov=ai.backend.kernel
 after_success:
   - codecov
 
 notifications:
   webhooks:
-    secure: Gd9njovK7f0UBDDuwwwNUSIhaipvQQOjXWkPsNXZr04eO43PqElnOn2emjDEiXO78Ovu5GGyUk27fhmqy7JdYTHPVAAd98fVbmzFwPu3XKvDNSrylbrckqoKRejcN5rRsPSzMFOklhwC/NHKiBz+XD2OhfITAqrnSc5BXKnHgBfPxK5s662oj6pQl3Uvvp5RCsuU8ceHq7xg224Kdkx2If+0oyB/8xRqG4E6vCS55jnxGFCOjGkfNg1wP8v9c8a9R7KNtz4ErlxQ5hVzCE8l6pHUTvscehzu/7JJmxziKLuXJYOyUGOKJCaHcYPRoUiPo6N0WbW1snDHK0d6XNGz7BFS3DVfzBama6pB3h4uiM02k8I+lm13L2xXN0A9ger0pRvDEieUTnXEc/zEy9wPCkSbFKMSkbshEPHnFzvDNJIaQELIQ+zXmNdBSCki3848WKMh85REwRwxczHr+bgz8JILb5DSgDBSJu2G7mOWCM5dohDrH6UfLI6fG4Dl48dJpu8pEO86PxE7MJ/u+fgnEGjINaaudoM29TQ4ArXNLHcC2C40ONWh/nsmzktAz/WgVPSvLtyJGA4lSgRkzxSGNr8rG1OMM1jeE/kBu246P26di+AcYX3o1JjKQhI3U2ql9ht0npIRWxO31aWn1kY+GYyjPt9/QSBTwPY0PY0dkxQ=
+    - https://outlook.office.com/webhook/74ae2c4d-ec4d-4fdf-b2c2-f5041d1e8631@13c6a44d-9b52-4b9e-aa34-0513ee7131f2/TravisCI/f17430ff524f401e9e20dec933bf3bd1/f9fe633f-b557-4a72-9533-8a75ca534594
