@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from pathlib import Path
 
-from ai.backend.kernel.version import VERSION
+# from ai.backend.kernel.version import VERSION
 
 
 requires = [
@@ -33,7 +33,7 @@ ci_requires = []
 
 setup(
     name='backend.ai-kernel-runner',
-    version=VERSION,
+    version='1.0.0',
     description='User code executors for Backend.AI kernels',
     long_description=Path('README.rst').read_text(),
     url='https://github.com/lablup/backend.ai-kernel-runner',
