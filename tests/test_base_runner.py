@@ -82,6 +82,18 @@ class TestBaseRunner:
         receiver.close()
 
     @pytest.mark.asyncio
+    async def test_skip_build_without_cmd(self, base_runner):
+        base_runner.run_subproc = asynctest.CoroutineMock()
+        base_runner.build_heuristic = asynctest.CoroutineMock()
+        base_runner.outsock = asynctest.Mock(spec=aiozmq.ZmqStream)
+
+        await base_runner._build(None)
+        await base_runner._build('')
+
+        base_runner.run_subproc.assert_not_called()
+        base_runner.build_heuristic.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_build_cmd_execution(self, runner_proc):
         proc, sender, receiver = runner_proc
 
@@ -89,6 +101,18 @@ class TestBaseRunner:
         op_type, data = await receiver.read()
         assert op_type.decode('ascii').rstrip() == 'stdout'
         assert data.decode('utf-8').rstrip() == 'testing...'
+
+    @pytest.mark.asyncio
+    async def test_execution_build_without_cmd(self, base_runner):
+        base_runner.run_subproc = asynctest.CoroutineMock()
+        base_runner.build_heuristic = asynctest.CoroutineMock()
+        base_runner.outsock = asynctest.Mock(spec=aiozmq.ZmqStream)
+
+        await base_runner._execute(None)
+        await base_runner._execute('')
+
+        base_runner.run_subproc.assert_not_called()
+        base_runner.build_heuristic.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_cmd_execution(self, runner_proc):
@@ -110,3 +134,37 @@ class TestBaseRunner:
         except subprocess.TimeoutExpired:
             pass
         assert b'exit' in stderr or b'exit' in stdout
+
+    @pytest.mark.asyncio
+    async def test_run_subproc(self, base_runner):
+        addr = 'tcp://127.0.0.1:2001'
+        base_runner.outsock = await aiozmq.create_zmq_stream(zmq.PUSH,
+                bind=addr)
+        observer = await aiozmq.create_zmq_stream(zmq.PULL, connect=addr)
+
+        await base_runner.run_subproc('echo testing...')
+        op_type, data = await observer.read()
+        assert op_type.decode('ascii').rstrip() == 'stdout'
+        assert data.decode('utf-8').rstrip() == 'testing...'
+
+        base_runner.outsock.close()
+        observer.close()
+
+    def test_run_tasks(self, base_runner):
+        async def fake_task():
+            base_runner.task_done = True
+            raise asyncio.CancelledError
+
+        async def insert_task_to_queue():
+            await base_runner.task_queue.put(fake_task)
+
+        loop = asyncio.get_event_loop()
+        base_runner.task_queue = asyncio.Queue(loop=loop)
+        base_runner.task_done = False
+        loop.run_until_complete(asyncio.gather(
+            base_runner.run_tasks(),
+            insert_task_to_queue(),
+        ))
+
+        assert base_runner.task_done
+        loop.close()

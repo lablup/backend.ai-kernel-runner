@@ -25,6 +25,7 @@ test_requires = [
     'flake8',
 ]
 dev_requires = build_requires + test_requires + [
+    'pytest-cov',
     'pytest-sugar',
 ]
 ci_requires = []
@@ -60,6 +61,12 @@ setup(
         'ai.backend.kernel.rust',
         'ai.backend.kernel.java',
         'ai.backend.kernel.haskell',
+        'ai.backend.kernel.julia',
+        'ai.backend.kernel.lua',
+        'ai.backend.kernel.nodejs',
+        'ai.backend.kernel.octave',
+        'ai.backend.kernel.php',
+        'ai.backend.kernel.r',
     ],
     python_requires='>=3.6',
     install_requires=requires,
