@@ -150,7 +150,7 @@ class TestBaseRunner:
         base_runner.outsock.close()
         observer.close()
 
-    def test_run_tasks(self, base_runner):
+    def test_run_tasks(self, base_runner, event_loop):
         async def fake_task():
             base_runner.task_done = True
             raise asyncio.CancelledError
@@ -158,13 +158,9 @@ class TestBaseRunner:
         async def insert_task_to_queue():
             await base_runner.task_queue.put(fake_task)
 
-        loop = asyncio.get_event_loop()
-        base_runner.task_queue = asyncio.Queue(loop=loop)
+        base_runner.task_queue = asyncio.Queue(loop=event_loop)
         base_runner.task_done = False
-        loop.run_until_complete(asyncio.gather(
-            base_runner.run_tasks(),
-            insert_task_to_queue(),
-        ))
+        tasks = [base_runner.run_tasks(), insert_task_to_queue()]
+        event_loop.run_until_complete(asyncio.wait(tasks))
 
         assert base_runner.task_done
-        loop.close()
