@@ -20,12 +20,12 @@ build_requires = [
 test_requires = [
     'pytest>=3.1',
     'pytest-asyncio',
+    'pytest-cov',
     'pytest-mock',
     'asynctest',
     'flake8',
 ]
 dev_requires = build_requires + test_requires + [
-    'pytest-cov',
     'pytest-sugar',
 ]
 ci_requires = []

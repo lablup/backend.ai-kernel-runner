@@ -1,0 +1,19 @@
+language: python
+cache: pip
+python:
+  - "3.6"
+os:
+  - linux
+
+install:
+  - pip install -U pip setuptools
+  - pip install -U -r requirements-ci.txt
+script:
+  - python -m flake8 ai/backend tests
+  - python -m pytest --cov=ai.backend.kernel
+after_success:
+  - codecov
+
+notifications:
+  webhooks:
+    secure: "u7Ylvc6HV9HUTS5e4E+BHeIJLMmR4EBH0mk45psBGBZn81TAmcJ65Xzcus9vGO3HZalBNzIq8YxJJJk6Dan9YY5wBnxsdwTbh8+dcS/9UFLbkc5Erh4C9B/4gPVd5HxfQc2hDBIfQUup5kWiSJlTgxGO0QDDspSoeBQYmIYJkfa7Sb6UQc3t6KHi1j9Hn5h1ycqsHOnPrPrG6u0EqwUvBuk+rGdZYGeilgwK5MrlhHmnB9vn60EQZr0mesYBDEXnF4+sVXswY+0AV+PYBcZkxwFNl3mZ2IyMMp6/YIwogLtzGwlS2XTXnTRgrjj7oPDLOBQnwv4BzQ0HJGbbNocl5K+cy1GmxOFOm0XNxiK3T3hbZIl5OY7Sger9JNgBM61Lx5tfW6S9r3bHyzx1ZsUgEJyYwGRl0KYTP3qI1blgyJlU7qvXensTFSRtTJq3PD+ri8o6GjRseEqZWIw5IkqR6FfFpATEOAqoOS/6925YQ5nSFHoLYq+tB6XhY20+p5cJKY9ZrPSsMR5OK5yrchmm/z0e3lpw7i94oA9qcW4M6qvWW45syNtnB9qa88pqR/j03CDv0eAFp1fzcPd4z4YZKUX43V0ziLl0ybcORkEHujwSO4xMckMC6gG7vqFV/2rS+Mq+kaD4GCtMajiC0DDal14jqpJFBKHp0nEEvC+vtQc="
