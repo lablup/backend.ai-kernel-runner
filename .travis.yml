@@ -22,7 +22,7 @@ jobs:
         - pip install -U -r requirements-ci.txt
       script:
         - python -m flake8 ai/backend tests
-        - python -m pytest -s -m "not integration" --cov=ai/backend
+        - python -m pytest -s -m "not integration" --cov=ai.backend
       after_success:
         - codecov
 

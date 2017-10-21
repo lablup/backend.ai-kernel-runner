@@ -24,6 +24,7 @@ test_requires = [
     'pytest-mock',
     'asynctest',
     'flake8',
+    'codecov',
 ]
 dev_requires = build_requires + test_requires + [
     'pytest-sugar',
