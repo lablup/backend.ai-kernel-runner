@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('module://ai.backend.kernel.python.matplotlib.ingen')
+matplotlib.use('module://ai.backend.kernel.python.matplotlib.ingen')  # noqa
 import matplotlib.pyplot as plt
 
 from ai.backend.kernel.python.matplotlib import ingen

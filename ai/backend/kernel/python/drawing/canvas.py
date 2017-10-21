@@ -18,53 +18,81 @@ class DrawingObject:
 
     def set_x(self, x):
         if self._type in (u'rect', u'circle', u'triangle'):
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'x', x))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'x', x))
 
     def set_y(self, y):
         if self._type in (u'rect', u'circle', u'triangle'):
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'y', y))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'y', y))
 
     def set_x1(self, x):
         if self._type == u'line':
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'x1', x))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'x1', x))
 
     def set_y1(self, y):
         if self._type == u'line':
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'y1', y))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'y1', y))
 
     def set_x2(self, x):
         if self._type == u'line':
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'x2', x))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'x2', x))
 
     def set_y2(self, y):
         if self._type == u'line':
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'y2', y))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'y2', y))
 
     def set_radius(self, r):
         if self._type == u'circle':
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'radius', r))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'radius', r))
 
     def rotate(self, a):
-        self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'rotate', a))
+        self._canvas._cmd_history.append((
+            self._canvas._id, u'update', self._id,
+            u'rotate', a))
 
     def set_angle(self, a):
-        self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'angle', a))
+        self._canvas._cmd_history.append((
+            self._canvas._id, u'update', self._id,
+            u'angle', a))
 
     def stroke(self, color):
         color = color.to_hex()
         if self._type == u'line':
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'color', color))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'color', color))
         elif self._type == u'circle':
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'border', color))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'border', color))
         elif self._type in (u'rect', u'triangle'):
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'border', color))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'border', color))
 
     def fill(self, color):
         color = color.to_hex()
         if self._type == u'circle':
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'fill', color))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'fill', color))
         elif self._type in (u'rect', u'triangle'):
-            self._canvas._cmd_history.append((self._canvas._id, u'update', self._id, u'fill', color))
+            self._canvas._cmd_history.append((
+                self._canvas._id, u'update', self._id,
+                u'fill', color))
 
 
 class Canvas:
@@ -127,7 +155,10 @@ class Canvas:
     def line(self, x0, y0, x1, y1, color=None):
         if color is None:
             color = self.fgcolor
-        args = (u'line', x0, y0, x1, y1, color.to_hex())
+        args = (
+            u'line', x0, y0, x1, y1,
+            color.to_hex()
+        )
         self._cmd_history.append((self._id, u'obj', self._next_objid, args))
         obj = DrawingObject(self, self._next_objid, args)
         self._next_objid += 1
@@ -138,7 +169,10 @@ class Canvas:
             border = self.fgcolor
         if fill is None:
             fill = Colors.Transparent
-        args = (u'circle', x, y, radius, border.to_hex(), fill.to_hex(), angle)
+        args = (
+            u'circle', x, y, radius,
+            border.to_hex(), fill.to_hex(), angle
+        )
         self._cmd_history.append((self._id, u'obj', self._next_objid, args))
         obj = DrawingObject(self, self._next_objid, args)
         self._next_objid += 1
@@ -149,7 +183,10 @@ class Canvas:
             border = self.fgcolor
         if fill is None:
             fill = Colors.Transparent
-        args = (u'rect', left, top, width, height, border.to_hex(), fill.to_hex(), angle)
+        args = (
+            u'rect', left, top, width, height,
+            border.to_hex(), fill.to_hex(), angle
+        )
         self._cmd_history.append((self._id, u'obj', self._next_objid, args))
         obj = DrawingObject(self, self._next_objid, args)
         self._next_objid += 1
@@ -160,7 +197,10 @@ class Canvas:
             border = self.fgcolor
         if fill is None:
             fill = Colors.Transparent
-        args = (u'triangle', left, top, width, height, border.to_hex(), fill.to_hex(), angle)
+        args = (
+            u'triangle', left, top, width, height,
+            border.to_hex(), fill.to_hex(), angle
+        )
         self._cmd_history.append((self._id, u'obj', self._next_objid, args))
         obj = DrawingObject(self, self._next_objid, args)
         self._next_objid += 1
