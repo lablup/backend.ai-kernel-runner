@@ -163,6 +163,9 @@ class BaseRunner(ABC):
         finally:
             self.subproc = None
 
+    async def shutdown(self):
+        pass
+
     async def handle_user_input(self, reader, writer):
         try:
             if self.user_input_queue is None:
@@ -217,11 +220,15 @@ class BaseRunner(ABC):
                     await self._interrupt()
             except asyncio.CancelledError:
                 break
+            except NotImplementedError:
+                log.error('Unsupported operation for this kernel: {0}', op_type)
+                await asyncio.sleep(0)
             except:
                 log.exception('unexpected error')
                 break
         user_input_server.close()
         await user_input_server.wait_closed()
+        await self.shutdown()
         self.insock.close()
 
     def run(self, cmdargs):
