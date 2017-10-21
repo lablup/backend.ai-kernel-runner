@@ -6,13 +6,13 @@ import base64
 import io
 
 # Base imports from matplotlib.backends.backend_template
-import matplotlib
+import matplotlib  # noqa
 from matplotlib._pylab_helpers import Gcf
 from matplotlib.backend_bases import FigureManagerBase
 from matplotlib.figure import Figure
 
 # The real renderer that generates image data
-_backend = 'svg'
+_backend = 'svg'  # noqa
 from matplotlib.backends import backend_agg
 from matplotlib.backends import backend_svg
 

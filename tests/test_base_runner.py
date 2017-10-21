@@ -11,8 +11,8 @@ import zmq
 from ai.backend.kernel.base import pipe_output
 
 
-@pytest.mark.asyncio
 class TestPipeOutput:
+
     @pytest.fixture
     async def sockets(self, unused_tcp_port):
         addr = f'tcp://127.0.0.1:{unused_tcp_port}'
@@ -22,6 +22,7 @@ class TestPipeOutput:
         outsock.close()
         observer.close()
 
+    @pytest.mark.asyncio
     async def test_pipe_output_to_stdout(self, sockets):
         proc = await asyncio.create_subprocess_shell(
             'echo stdout...',
@@ -36,6 +37,7 @@ class TestPipeOutput:
         assert type.decode('ascii').rstrip() == 'stdout'
         assert data.decode('utf-8').rstrip() == 'stdout...'
 
+    @pytest.mark.asyncio
     async def test_pipe_output_to_stderr(self, sockets):
         proc = await asyncio.create_subprocess_shell(
             '>&2 echo stderr...',
@@ -50,6 +52,7 @@ class TestPipeOutput:
         assert type.decode('ascii').rstrip() == 'stderr'
         assert data.decode('utf-8').rstrip() == 'stderr...'
 
+    @pytest.mark.asyncio
     async def test_pipe_output_rejects_invalid_target(self, sockets):
         proc = await asyncio.create_subprocess_shell(
             'echo invalid...',
@@ -64,16 +67,6 @@ class TestPipeOutput:
 
 
 class TestBaseRunner:
-    @pytest.fixture
-    async def sockets(self):
-        addr = f'tcp://127.0.0.1'
-        sender = await aiozmq.create_zmq_stream(zmq.PUSH,
-                                                connect=f'{addr}:2000')
-        receiver = await aiozmq.create_zmq_stream(zmq.PULL,
-                                                  connect=f'{addr}:2001')
-        yield sender, receiver
-        sender.close()
-        receiver.close()
 
     @pytest.mark.asyncio
     async def test_skip_build_without_cmd(self, base_runner):
@@ -90,11 +83,15 @@ class TestBaseRunner:
     @pytest.mark.asyncio
     async def test_build_cmd_execution(self, runner_proc):
         proc, sender, receiver = runner_proc
-
         sender.write([b'build', b'echo testing...'])
-        op_type, data = await receiver.read()
-        assert op_type.decode('ascii').rstrip() == 'stdout'
-        assert data.decode('utf-8').rstrip() == 'testing...'
+        records = []
+        while True:
+            op_type, data = await receiver.read()
+            records.append((op_type, data))
+            if op_type == b'build-finished':
+                break
+        assert records[0][0].decode('ascii').rstrip() == 'stdout'
+        assert records[0][1].decode('utf-8').rstrip() == 'testing...'
 
     @pytest.mark.asyncio
     async def test_execution_build_without_cmd(self, base_runner):
@@ -111,11 +108,15 @@ class TestBaseRunner:
     @pytest.mark.asyncio
     async def test_execute_cmd_execution(self, runner_proc):
         proc, sender, receiver = runner_proc
-
         sender.write([b'exec', b'echo testing...'])
-        op_type, data = await receiver.read()
-        assert op_type.decode('ascii').rstrip() == 'stdout'
-        assert data.decode('utf-8').rstrip() == 'testing...'
+        records = []
+        while True:
+            op_type, data = await receiver.read()
+            records.append((op_type, data))
+            if op_type == b'finished':
+                break
+        assert records[0][0].decode('ascii').rstrip() == 'stdout'
+        assert records[0][1].decode('utf-8').rstrip() == 'testing...'
 
     @pytest.mark.parametrize('sig', [signal.SIGINT, signal.SIGTERM])
     def test_interruption(self, runner_proc, sig):
@@ -127,22 +128,25 @@ class TestBaseRunner:
             stdout, stderr = proc.communicate(2)
         except subprocess.TimeoutExpired:
             pass
-        assert b'exit' in stderr or b'exit' in stdout
+        assert b'exit' in stderr
 
     @pytest.mark.asyncio
     async def test_run_subproc(self, base_runner):
-        addr = 'tcp://127.0.0.1:2001'
-        base_runner.outsock = await aiozmq.create_zmq_stream(zmq.PUSH,
-                                                             bind=addr)
-        observer = await aiozmq.create_zmq_stream(zmq.PULL, connect=addr)
+        records = []
 
+        class DummyOut():
+
+            def write(self, msg):
+                records.append(msg)
+
+            async def drain(self):
+                pass
+
+        base_runner.outsock = DummyOut()
         await base_runner.run_subproc('echo testing...')
-        op_type, data = await observer.read()
-        assert op_type.decode('ascii').rstrip() == 'stdout'
-        assert data.decode('utf-8').rstrip() == 'testing...'
 
-        base_runner.outsock.close()
-        observer.close()
+        assert records[0][0].rstrip() == b'stdout'
+        assert records[0][1].rstrip() == b'testing...'
 
     def test_run_tasks(self, base_runner, event_loop):
         async def fake_task():

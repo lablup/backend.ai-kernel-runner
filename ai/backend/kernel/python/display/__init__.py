@@ -10,6 +10,10 @@ from ..types import (
     MediaRecord, HTMLRecord
 )
 
+__all__ = (
+    'MediaRecord', 'HTMLRecord', 'display',
+)
+
 
 def display(obj, **kwargs):
     if isinstance(obj, pd.DataFrame):

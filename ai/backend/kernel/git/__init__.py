@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import fcntl
-import io
 import os
 from pathlib import Path
 import pty
@@ -13,15 +12,9 @@ import subprocess
 import sys
 import termios
 import traceback
-import types
 
 import aiozmq
-json_opts = {}
-try:
-    import simplejson as json
-    json_opts['namedtuple_as_object'] = False
-except ImportError:
-    import json
+import simplejson as json
 # import pygit2
 # from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
 import uvloop
@@ -53,7 +46,8 @@ class TerminalRunner(object):
     '''
     A thin wrapper for REPL.
 
-    It creates a dummy module that user codes run and keeps the references to user-created objects
+    It creates a dummy module that user codes run and keeps the references to
+    user-created objects
     (e.g., variables and functions).
     '''
 
@@ -183,8 +177,10 @@ class TerminalRunner(object):
     async def handle_command(self, code_id, code_txt):
         try:
             if code_txt.startswith('%'):
-                args = self.cmdparser.parse_args(shlex.split(code_txt[1:], comments=True))
-                if asyncio.iscoroutine(args.func) or asyncio.iscoroutinefunction(args.func):
+                args = self.cmdparser.parse_args(
+                    shlex.split(code_txt[1:], comments=True))
+                if asyncio.iscoroutine(args.func) or \
+                        asyncio.iscoroutinefunction(args.func):
                     await args.func(args)
                 else:
                     args.func(args)
@@ -206,12 +202,15 @@ class TerminalRunner(object):
             os.execv('/bin/bash', ['/bin/bash'])
         else:
             if self.sock_term_in is None:
-                self.sock_term_in  = await aiozmq.create_zmq_stream(zmq.SUB, bind='tcp://*:2002')
+                self.sock_term_in  = await aiozmq.create_zmq_stream(
+                    zmq.SUB, bind='tcp://*:2002')
                 self.sock_term_in.transport.subscribe(b'')
             if self.sock_term_out is None:
-                self.sock_term_out = await aiozmq.create_zmq_stream(zmq.PUB, bind='tcp://*:2003')
-            await self.loop.connect_read_pipe(lambda: StdoutProtocol(self.sock_term_out, self),
-                                              os.fdopen(self.fd, 'rb'))
+                self.sock_term_out = await aiozmq.create_zmq_stream(
+                    zmq.PUB, bind='tcp://*:2003')
+            await self.loop.connect_read_pipe(
+                lambda: StdoutProtocol(self.sock_term_out, self),
+                os.fdopen(self.fd, 'rb'))
             asyncio.ensure_future(self.terminal_in())
             print('opened shell pty: stdin at port 2002, stdout at port 2003')
 
@@ -232,7 +231,7 @@ class TerminalRunner(object):
         os.kill(self.pid, signal.SIGHUP)
         os.kill(self.pid, signal.SIGCONT)
         await asyncio.sleep(0)
-        ret = os.waitpid(self.pid, 0)
+        os.waitpid(self.pid, 0)
         self.pid = None
         self.fd = None
         print('killed shell')
@@ -245,8 +244,8 @@ async def repl(ev_term, sock_in, sock_out):
         while True:
             try:
                 data = await sock_in.read()
-                result = await runner.handle_command(data[0].decode(),
-                                                     data[1].decode())
+                await runner.handle_command(data[0].decode(),
+                                            data[1].decode())
             except (aiozmq.ZmqStreamClosed, asyncio.CancelledError):
                 break
             await sock_out.drain()
@@ -254,6 +253,7 @@ async def repl(ev_term, sock_in, sock_out):
         pass
     finally:
         await runner.kill_shell()
+
 
 def main():
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -293,6 +293,7 @@ def main():
     finally:
         print('exit.')
         loop.close()
+
 
 if __name__ == '__main__':
     main()

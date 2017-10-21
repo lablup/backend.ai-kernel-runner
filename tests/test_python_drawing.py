@@ -1,10 +1,15 @@
-from six.moves import builtins
-import simplejson as json
 import unittest
 import math
 
-from . import canvas, Canvas, Vec2D, Turtle, Colors
-from .encoding import encode_commands, decode_commands
+from six.moves import builtins
+import simplejson as json
+
+from ai.backend.kernel.python.drawing import (
+    canvas, Canvas, Vec2D, Turtle, Colors
+)
+from ai.backend.kernel.python.drawing.encoding import (
+    encode_commands, decode_commands
+)
 
 
 class CanvasFunctionalTest(unittest.TestCase):
@@ -15,15 +20,22 @@ class CanvasFunctionalTest(unittest.TestCase):
         self.assertIsInstance(t, Turtle)
 
     def test_update(self):
-        builtins._sorna_media = []
+        records = []
+
+        def dummy_emit(record):
+            records.append(record)
+
+        builtins._sorna_emit = dummy_emit
+
+        records.clear()
         canvas._canvas_id_counter = 0
         c = Canvas(100, 120)
         l = c.line(20, 20, 50, 50)
         o = c.circle(10, 10, 30)
         c.update()
-        self.assertGreater(len(builtins._sorna_media), 0)
-        self.assertEqual(builtins._sorna_media[0][0], u'application/x-sorna-drawing')
-        data = builtins._sorna_media[0][1]
+        self.assertGreater(len(records), 0)
+        self.assertEqual(records[0][0], u'application/x-sorna-drawing')
+        data = records[0][1]
         update = decode_commands(data)
         self.assertEqual(0, update[0][0])
         self.assertEqual(u'canvas', update[0][1])
@@ -40,12 +52,12 @@ class CanvasFunctionalTest(unittest.TestCase):
         self.assertEqual(o._id, circle_id)
         self.assertEqual(u'circle', update[-1][3][0])
 
-        builtins._sorna_media = []
+        records.clear()
         o.set_y(45)
         c.update()
-        self.assertGreater(len(builtins._sorna_media), 0)
-        self.assertEqual(builtins._sorna_media[0][0], u'application/x-sorna-drawing')
-        data = builtins._sorna_media[0][1]
+        self.assertGreater(len(records), 0)
+        self.assertEqual(records[0][0], u'application/x-sorna-drawing')
+        data = records[0][1]
         update = decode_commands(data)
         self.assertEqual(0, update[0][0])
         self.assertEqual(u'update', update[0][1])
@@ -65,16 +77,16 @@ class EncodingFunctionalTest(unittest.TestCase):
 
     def test_size(self):
         c = Canvas(100, 120)
-        _ = c.line(20, 20, 50, 50)
-        _ = c.circle(10, 10, 30)
+        _ = c.line(20, 20, 50, 50)  # noqa
+        _ = c.circle(10, 10, 30)    # noqa
         encdata = encode_commands(c._cmd_history)
         jsondata = json.dumps(c._cmd_history)
         self.assertGreater(len(jsondata), len(encdata))
 
     def test_encoding(self):
         c = Canvas(100, 120)
-        _ = c.line(20, 20, 50, 50)
-        _ = c.circle(10, 10, 30)
+        _ = c.line(20, 20, 50, 50)  # noqa
+        _ = c.circle(10, 10, 30)    # noqa
         encdata = encode_commands(c._cmd_history)
         cmds = decode_commands(encdata)
         self.assertListEqual(cmds[0], list(c._cmd_history[0]))

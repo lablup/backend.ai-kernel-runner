@@ -60,8 +60,9 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.c', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = (f'gcc {tmpf.name} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS} && '
-                   f'./main')
+            cmd = (
+                f'gcc {tmpf.name} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS} && '
+                f'./main')
             await self.run_subproc(cmd)
 
     async def complete(self, data):

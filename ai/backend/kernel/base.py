@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import asyncio
 from functools import partial
 import logging
-import logging.config
 import os
 from pathlib import Path
 import signal
@@ -149,12 +148,13 @@ class BaseRunner(ABC):
             )
             self.subproc = proc
             pipe_tasks = [
-                loop.create_task(pipe_output(proc.stdout, self.outsock,
-                                             'stdout')),
-                loop.create_task(pipe_output(proc.stderr, self.outsock,
-                                             'stderr')),
+                loop.create_task(pipe_output(proc.stdout, self.outsock, 'stdout')),
+                loop.create_task(pipe_output(proc.stderr, self.outsock, 'stderr')),
             ]
             await proc.wait()
+            # if the process terminates very quickly,
+            # give a chance of scheduling to pipe_tasks
+            await asyncio.sleep(0)
             for t in pipe_tasks:
                 t.cancel()
                 await t

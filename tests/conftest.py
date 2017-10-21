@@ -1,3 +1,4 @@
+import os
 import shlex
 import subprocess
 
@@ -47,8 +48,13 @@ async def runner_proc():
     """
     cmd = 'python -m ai.backend.kernel --debug c'
     args = shlex.split(cmd)
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    env = os.environ.copy()
+    env['LD_PRELOAD'] = ''
+    proc = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env)
 
     addr = f'tcp://127.0.0.1'
     sender = await aiozmq.create_zmq_stream(zmq.PUSH, connect=f'{addr}:2000')
@@ -58,4 +64,4 @@ async def runner_proc():
 
     sender.close()
     receiver.close()
-    proc.kill()
+    proc.terminate()

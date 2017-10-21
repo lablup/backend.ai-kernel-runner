@@ -55,8 +55,9 @@ class PythonInprocRunner(threading.Thread):
         self.stderr_emitter = StreamToEmitter(self.emit, 'stderr')
 
         # Initialize user module and namespaces.
-        user_module = types.ModuleType('__main__',
-                doc='Automatically created module for the interactive shell.')
+        user_module = types.ModuleType(
+            '__main__',
+            doc='Automatically created module for the interactive shell.')
         user_module.__dict__.setdefault('__builtin__', builtin_mod)
         user_module.__dict__.setdefault('__builtins__', builtin_mod)
         self.user_module = user_module

@@ -1,11 +1,12 @@
 import base64
-import umsgpack
+import msgpack
 
 
 def encode_commands(cmdlist):
-    bindata = umsgpack.packb(cmdlist)
+    bindata = msgpack.packb(cmdlist, use_bin_type=True)
     return base64.b64encode(bindata).decode('ascii')
 
 
 def decode_commands(data):
-    return umsgpack.unpackb(base64.b64decode(data))
+    bindata = base64.b64decode(data)
+    return msgpack.unpackb(bindata, encoding='utf8')

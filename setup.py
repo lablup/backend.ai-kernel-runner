@@ -76,12 +76,16 @@ setup(
         'dev': dev_requires,
         'ci': ci_requires,
         # kernel-specific requirements
-        'python': ['IPython', 'pandas', 'numpy', 'matplotlib'],
+        'python': ['six', 'IPython', 'pandas', 'numpy', 'matplotlib'],
+        'julia': [],
+        'octave': [],
+        'php': [],
         'c': [],
         'cpp': [],
         'golang': [],
         'rust': [],
         'java': [],
+        'nodejs': [],
         'haskell': [],
     },
 )
