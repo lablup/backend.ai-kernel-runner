@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import fcntl
+import logging
 import os
 import pty
 import shlex
@@ -14,13 +15,15 @@ import aiozmq
 import simplejson as json
 import zmq
 
+log = logging.getLogger()
+
 
 class StdoutProtocol(asyncio.Protocol):
 
-    def __init__(self, sock_term_out, runner):
+    def __init__(self, sock_term_out, mother_term):
         self.transport = None
         self.sock_term_out = sock_term_out
-        self.runner = runner
+        self.term = mother_term
 
     def connection_made(self, transport):
         self.transport = transport
@@ -29,10 +32,13 @@ class StdoutProtocol(asyncio.Protocol):
         self.sock_term_out.write([data])
 
     def connection_lost(self, exc):
-        if not self.runner.ev_term.is_set():
+        if not self.term.auto_restart:
+            self.sock_term_out.write([b'Terminated.\r\n'])
+            return
+        if not self.term.ev_term.is_set():
             self.sock_term_out.write([b'Restarting...\r\n'])
-            os.waitpid(self.runner.pid, 0)
-            asyncio.ensure_future(self.runner.start(), loop=self.runner.loop)
+            os.waitpid(self.term.pid, 0)
+            asyncio.ensure_future(self.term.start(), loop=self.term.loop)
 
 
 class Terminal:
@@ -40,7 +46,8 @@ class Terminal:
     A wrapper for a terminal-based app.
     '''
 
-    def __init__(self, shell_cmd, ev_term, sock_out, auto_restart=True, loop=None):
+    def __init__(self, shell_cmd, ev_term, sock_out, *,
+                 auto_restart=True, loop=None):
         self._sorna_media = []
         self.loop = loop if loop else asyncio.get_event_loop()
 
@@ -146,4 +153,4 @@ class Terminal:
         os.waitpid(self.pid, 0)
         self.pid = None
         self.fd = None
-        print('killed shell')
+        print('terminated term-app.')

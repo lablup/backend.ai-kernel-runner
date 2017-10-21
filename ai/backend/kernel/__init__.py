@@ -23,6 +23,7 @@ lang_map = {
     'octave': 'ai.backend.kernel.octave.Runner',
     'php': 'ai.backend.kernel.php.Runner',
     'r': 'ai.backend.kernel.r.Runner',
+    'git': 'ai.backend.kernel.git.Runner',
 }
 
 

@@ -36,8 +36,7 @@ class Runner(BaseRunner):
         self.user_input_queue = asyncio.Queue()
         self.term = Terminal(
             '/bin/bash',
-            self.stopped,
-            self.insock, self.outsock,
+            self.stopped, self.outsock,
             auto_restart=True,
         )
 

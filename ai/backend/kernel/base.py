@@ -8,7 +8,7 @@ import signal
 import sys
 
 import aiozmq
-import uvloop
+# import uvloop
 import zmq
 import simplejson as json
 
@@ -237,10 +237,11 @@ class BaseRunner(ABC):
         sys.stdin = open(os.devnull, 'rb')
 
         # Initialize event loop.
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        # TODO: fix use of uvloop (#2)
+        # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
         self.loop = loop
-        stopped = asyncio.Event()
+        self.stopped = asyncio.Event()
 
         def interrupt(loop, stopped):
             if not stopped.is_set():
@@ -250,8 +251,8 @@ class BaseRunner(ABC):
                 print('forced shutdown!', file=sys.stderr)
                 sys.exit(1)
 
-        loop.add_signal_handler(signal.SIGINT, interrupt, loop, stopped)
-        loop.add_signal_handler(signal.SIGTERM, interrupt, loop, stopped)
+        loop.add_signal_handler(signal.SIGINT, interrupt, loop, self.stopped)
+        loop.add_signal_handler(signal.SIGTERM, interrupt, loop, self.stopped)
 
         try:
             self.task_queue = asyncio.Queue(loop=loop)
