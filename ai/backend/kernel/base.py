@@ -152,12 +152,7 @@ class BaseRunner(ABC):
                 loop.create_task(pipe_output(proc.stderr, self.outsock, 'stderr')),
             ]
             await proc.wait()
-            # if the process terminates very quickly,
-            # give a chance of scheduling to pipe_tasks
-            await asyncio.sleep(0)
-            for t in pipe_tasks:
-                t.cancel()
-                await t
+            await asyncio.gather(*pipe_tasks)
         except:
             log.exception('unexpected error')
         finally:
