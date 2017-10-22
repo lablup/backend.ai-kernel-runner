@@ -88,5 +88,6 @@ setup(
         'java': [],
         'nodejs': [],
         'haskell': [],
+        'lua': [],
     },
 )
