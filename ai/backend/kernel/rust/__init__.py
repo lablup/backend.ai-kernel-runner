@@ -34,7 +34,7 @@ class Runner(BaseRunner):
         if Path('Cargo.toml').is_file():
             await self.run_subproc('cargo build')
         elif Path('main.rs').is_file():
-            await self.run_subproc('rustc - -o main main.rs')
+            await self.run_subproc('rustc -o main main.rs')
         else:
             log.error(
                 'cannot find the main/build file ("Cargo.toml" or "main.rs").')
@@ -52,7 +52,7 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.rs', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = f'rustc - -o main {tmpf.name} && ./main'
+            cmd = f'rustc -o main {tmpf.name} && ./main'
             await self.run_subproc(cmd)
 
     async def complete(self, data):
