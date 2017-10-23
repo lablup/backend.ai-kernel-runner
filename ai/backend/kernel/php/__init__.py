@@ -41,6 +41,7 @@ class Runner(BaseRunner):
 
     async def query(self, code_text):
         with tempfile.NamedTemporaryFile(suffix='.php', dir='.') as tmpf:
+            tmpf.write('<?php\n\n')
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
             cmd = f'php {tmpf.name}'
