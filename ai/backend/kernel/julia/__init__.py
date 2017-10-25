@@ -14,7 +14,7 @@ CHILD_ENV = {
     'USER': 'work',
     'HOME': '/home/work',
     'PATH': ('/usr/local/julia:/usr/local/julia/bin:/usr/local/sbin:'
-             '/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin')
+             '/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'),
     'LD_PRELOAD': os.environ.get('LD_PRELOAD', '/home/sorna/patch-libs.so'),
 }
 
