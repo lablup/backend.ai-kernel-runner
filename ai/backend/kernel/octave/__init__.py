@@ -34,7 +34,7 @@ class Runner(BaseRunner):
 
     async def execute_heuristic(self):
         if Path('main.js').is_file():
-            cmd = 'octave main.m'
+            cmd = 'octave-cli main.m'
             await self.run_subproc(cmd)
         else:
             log.error('cannot find executable ("main.m").')
@@ -43,7 +43,8 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.m', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = f'octave {tmpf.name}'
+            # TODO: support graphics output to display
+            cmd = f'octave-cli {tmpf.name}'
             await self.run_subproc(cmd)
 
     async def complete(self, data):
