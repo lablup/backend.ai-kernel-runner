@@ -34,7 +34,7 @@ ci_requires = []
 
 setup(
     name='backend.ai-kernel-runner',
-    version='1.0.0',
+    version='1.0.1',
     description='User code executors for Backend.AI kernels',
     long_description=Path('README.rst').read_text(),
     url='https://github.com/lablup/backend.ai-kernel-runner',
@@ -56,6 +56,9 @@ setup(
     packages=[
         'ai.backend.kernel',
         'ai.backend.kernel.python',
+        'ai.backend.kernel.python.display',
+        'ai.backend.kernel.python.drawing',
+        'ai.backend.kernel.python.matplotlib',
         'ai.backend.kernel.c',
         'ai.backend.kernel.cpp',
         'ai.backend.kernel.golang',
