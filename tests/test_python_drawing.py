@@ -30,8 +30,8 @@ class CanvasFunctionalTest(unittest.TestCase):
         records.clear()
         canvas._canvas_id_counter = 0
         c = Canvas(100, 120)
-        l = c.line(20, 20, 50, 50)
-        o = c.circle(10, 10, 30)
+        line_obj = c.line(20, 20, 50, 50)
+        circle_obj = c.circle(10, 10, 30)
         c.update()
         self.assertGreater(len(records), 0)
         self.assertEqual(records[0][0], u'application/x-sorna-drawing')
@@ -44,16 +44,16 @@ class CanvasFunctionalTest(unittest.TestCase):
         self.assertEqual(0, update[-2][0])
         self.assertEqual(u'obj', update[-2][1])
         line_id = update[-2][2]
-        self.assertEqual(l._id, line_id)
+        self.assertEqual(line_obj._id, line_id)
         self.assertEqual(u'line', update[-2][3][0])
         self.assertEqual(0, update[-1][0])
         self.assertEqual(u'obj', update[-1][1])
         circle_id = update[-1][2]
-        self.assertEqual(o._id, circle_id)
+        self.assertEqual(circle_obj._id, circle_id)
         self.assertEqual(u'circle', update[-1][3][0])
 
         records.clear()
-        o.set_y(45)
+        circle_obj.set_y(45)
         c.update()
         self.assertGreater(len(records), 0)
         self.assertEqual(records[0][0], u'application/x-sorna-drawing')
