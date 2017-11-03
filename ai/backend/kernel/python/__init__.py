@@ -1,6 +1,7 @@
 import asyncio
 import ctypes
 import logging
+import os
 from pathlib import Path
 import threading
 
@@ -16,10 +17,20 @@ DEFAULT_PYFLAGS = ''
 CHILD_ENV = {
     'TERM': 'xterm',
     'LANG': 'C.UTF-8',
-    'SHELL': '/bin/ash',
+    'SHELL': '/bin/ash' if Path('/bin/ash').is_file() else '/bin/bash',
     'USER': 'work',
     'HOME': '/home/work',
-    'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+    'PATH': ':'.join([
+        '/usr/local/nvidia/bin',
+        '/usr/local/cuda/bin',
+        '/usr/local/sbin',
+        '/usr/local/bin',
+        '/usr/sbin',
+        '/usr/bin',
+        '/sbin',
+        '/bin',
+    ]),
+    'LD_LIBRARY_PATH': os.environ.get('LD_LIBRARY_PATH', ''),
     'LD_PRELOAD': '/home/sorna/patch-libs.so',
 }
 
