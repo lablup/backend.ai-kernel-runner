@@ -1,6 +1,7 @@
 import builtins as builtin_mod
 import code
 from functools import partial
+from io import IOBase, UnsupportedOperation
 import logging
 import sys
 import traceback
@@ -21,17 +22,40 @@ from .types import (
 log = logging.getLogger()
 
 
-class StreamToEmitter:
+class ConsoleOutput(IOBase):
 
-    def __init__(self, emitter, stream_type):
-        self.emit = emitter
-        self.stream_type = stream_type
+    def __init__(self, emit, stream_type):
+        self._emit = emit
+        self._stream_type = stream_type
+
+    def readable(self):
+        return False
+
+    def writable(self):
+        return True
+
+    def seekable(self):
+        return False
+
+    def fileno(self):
+        raise OSError(f'{self._stream_type} has no file descriptor '
+                      'because it is a virtual console.')
+
+    def read(self, *args, **kwargs):
+        raise UnsupportedOperation()
 
     def write(self, s):
-        self.emit(ConsoleRecord(self.stream_type, s))
+        if self.closed:
+            raise ValueError('Cannot write to the closed console.')
+        if isinstance(s, str):
+            s = s.encode('utf8')
+        self._emit(ConsoleRecord(self._stream_type, s))
 
     def flush(self):
         pass
+
+    def isatty(self):
+        return True
 
 
 class PythonInprocRunner(threading.Thread):
@@ -51,8 +75,8 @@ class PythonInprocRunner(threading.Thread):
         self.user_input_queue = user_input_queue
         self.sentinel = sentinel
 
-        self.stdout_emitter = StreamToEmitter(self.emit, 'stdout')
-        self.stderr_emitter = StreamToEmitter(self.emit, 'stderr')
+        self.stdout = ConsoleOutput(self.emit, 'stdout')
+        self.stderr = ConsoleOutput(self.emit, 'stderr')
 
         # Initialize user module and namespaces.
         user_module = types.ModuleType(
@@ -90,15 +114,15 @@ class PythonInprocRunner(threading.Thread):
                                                              user_tb))
                 hdr_str = 'Traceback (most recent call last):\n' \
                         if not err_str.startswith('Traceback ') else ''
-                self.emit(ConsoleRecord('stderr', hdr_str + err_str))
+                self.stderr.write(hdr_str + err_str)
                 self.output_queue.put(self.sentinel)
             else:
-                sys.stdout, orig_stdout = self.stdout_emitter, sys.stdout
-                sys.stderr, orig_stderr = self.stderr_emitter, sys.stderr
+                sys.stdout, orig_stdout = self.stdout, sys.stdout
+                sys.stderr, orig_stderr = self.stderr, sys.stderr
                 try:
                     exec(code_obj, self.user_ns)
                 except KeyboardInterrupt:
-                    self.emit(ConsoleRecord('stderr', 'Interrupted!'))
+                    print('Interrupted!', file=self.stderr)
                 except Exception:
                     # strip the first frame
                     exc_type, exc_val, tb = sys.exc_info()
@@ -143,7 +167,7 @@ class PythonInprocRunner(threading.Thread):
             assert record.target in ('stdout', 'stderr')
             self.output_queue.put([
                 record.target.encode('ascii'),
-                record.data.encode('utf8'),
+                record.data,
             ])
         elif isinstance(record, MediaRecord):
             self.output_queue.put([

@@ -80,7 +80,9 @@ setup(
         'dev': dev_requires,
         'ci': ci_requires,
         # kernel-specific requirements
-        'python': ['six', 'IPython', 'pandas', 'numpy', 'matplotlib'],
+        'python': [
+            'six', 'IPython', 'pandas', 'numpy',
+            'matplotlib', 'msgpack-python'],
         'c': [],
         'cpp': [],
         'git': [],
