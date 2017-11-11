@@ -71,6 +71,7 @@ setup(
         'ai.backend.kernel.octave',
         'ai.backend.kernel.php',
         'ai.backend.kernel.r',
+        'ai.backend.kernel.git',
     ],
     python_requires='>=3.6',
     install_requires=requires,
