@@ -117,7 +117,7 @@ class Terminal:
     async def start(self):
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
-            args = shlex.split(self.shell_command)
+            args = shlex.split(self.shell_cmd)
             os.execv(args[0], args)
         else:
             if self.sock_term_in is None:
