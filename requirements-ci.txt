@@ -1,1 +1,1 @@
--e .[build,test,ci,python,julia,octave,php,c,cpp,golang,rust,java,nodejs,haskell]
+-e .[build,test,ci,python,julia,octave,php,c,cpp,golang,r,r_server_ms,rust,java,nodejs,haskell]
