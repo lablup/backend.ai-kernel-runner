@@ -22,13 +22,10 @@ class DummyOutputSocket:
 
 @pytest.fixture
 def runner():
-    runner = Runner(endpoint='', credentials={
-        'username': '',
-        'password': '',
-    })
+    # Use the environment variables to provide the config for a test setup.
+    runner = Runner()
     loop = asyncio.get_event_loop()
     runner.loop = loop
-    runner.outsock = DummyOutputSocket()
 
     cmdargs = Namespace()
     cmdargs.debug = True
@@ -37,6 +34,11 @@ def runner():
         runner.task_queue = asyncio.Queue(loop=loop)
         run_task = loop.create_task(runner.run_tasks())
         main_task = loop.create_task(runner.main_loop(cmdargs))
+
+        loop.run_until_complete(runner.init_done.wait())
+
+        # mock
+        runner.outsock = DummyOutputSocket()
 
         yield runner
 
@@ -55,7 +57,14 @@ def runner():
 
 
 @pytest.mark.integration
-@pytest.mark.asyncio
-async def test_execute(runner):
-    await runner.query('cat("hello world")')
+def test_execute_hello_world(runner):
+
+    async def do():
+        await runner.query('cat("hello world")')
+
+    # need to wrap in a task for aiohttp
+    task = runner.loop.create_task(do())
+    runner.loop.run_until_complete(task)
+
     print(runner.outsock.messages)
+    assert 'hello world' in runner.outsock.messages[0][1]
