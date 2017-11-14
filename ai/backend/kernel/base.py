@@ -36,24 +36,36 @@ class BaseRunner(ABC):
 
     log_prefix = 'generic-kernel'
 
-    def __init__(self):
+    def __init__(self, loop=None):
         self.child_env = {}
-        self.insock = None
-        self.outsock = None
-        self.loop = None
         self.subproc = None
 
-        self.init_done = asyncio.Event()
+        # initialized after loop creation
+        self.loop = loop
+        self.insock = None
+        self.outsock = None
+        self.init_done = None
+        self.task_queue = None
 
         # If the subclass implements interatcive user inputs, it should set a
         # asyncio.Queue-like object to self.user_input_queue in the
         # init_with_loop() method.
         self.user_input_queue = None
 
+    async def _init_with_loop(self):
+        if self.init_done is not None:
+            self.init_done.clear()
+        try:
+            await self.init_with_loop()
+        except Exception:
+            log.exception('unexpected error')
+            return
+        if self.init_done is not None:
+            self.init_done.set()
+
     @abstractmethod
     async def init_with_loop(self):
         """Initialize after the event loop is created."""
-        self.init_done.set()
 
     async def _build(self, build_cmd):
         try:
@@ -195,8 +207,8 @@ class BaseRunner(ABC):
                                        '127.0.0.1', 65000)
         setup_logger(self.outsock, self.log_prefix, cmdargs.debug)
 
+        await self._init_with_loop()
         log.debug('start serving...')
-        await self.init_with_loop()
         while True:
             try:
                 data = await self.insock.read()
@@ -239,7 +251,9 @@ class BaseRunner(ABC):
         # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
         self.loop = loop
-        self.stopped = asyncio.Event()
+        self.task_queue = asyncio.Queue(loop=loop)
+        self.init_done = asyncio.Event(loop=loop)
+        self.stopped = asyncio.Event(loop=loop)
 
         def interrupt(loop, stopped):
             if not stopped.is_set():
@@ -253,9 +267,8 @@ class BaseRunner(ABC):
         loop.add_signal_handler(signal.SIGTERM, interrupt, loop, self.stopped)
 
         try:
-            self.task_queue = asyncio.Queue(loop=loop)
-            run_task = loop.create_task(self.run_tasks())
             main_task = loop.create_task(self.main_loop(cmdargs))
+            run_task = loop.create_task(self.run_tasks())
             loop.run_forever()
             # interrupted
             run_task.cancel()

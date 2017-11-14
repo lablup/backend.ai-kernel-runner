@@ -1,5 +1,6 @@
 from argparse import Namespace
 import asyncio
+from datetime import datetime
 import os
 import signal
 
@@ -16,55 +17,65 @@ class DummyOutputSocket:
     def write(self, msg):
         self.messages.append(msg)
 
+    async def drain(self):
+        pass
+
+    def close(self):
+        pass
+
     def clear(self):
         self.messages.clear()
 
 
 @pytest.fixture
-def runner():
+async def runner(event_loop):
     # Use the environment variables to provide the config for a test setup.
-    runner = Runner()
-    loop = asyncio.get_event_loop()
-    runner.loop = loop
-
+    runner = Runner(loop=event_loop)
     cmdargs = Namespace()
     cmdargs.debug = True
 
-    try:
-        runner.task_queue = asyncio.Queue(loop=loop)
-        run_task = loop.create_task(runner.run_tasks())
-        main_task = loop.create_task(runner.main_loop(cmdargs))
+    runner.loop = event_loop
+    runner.task_queue = asyncio.Queue(loop=event_loop)
+    runner.init_done = asyncio.Event(loop=event_loop)
 
-        loop.run_until_complete(runner.init_done.wait())
+    main_task = event_loop.create_task(runner.main_loop(cmdargs))
+    run_task = event_loop.create_task(runner.run_tasks())
 
-        # mock
-        runner.outsock = DummyOutputSocket()
+    await asyncio.sleep(0)
+    await runner.init_done.wait()
 
-        yield runner
+    # mock
+    runner.outsock = DummyOutputSocket()
 
-        run_task.cancel()
-        main_task.cancel()
-        try:
-            loop.run_until_complete(run_task)
-        except asyncio.CancelledError:
-            pass
-        try:
-            loop.run_until_complete(main_task)
-        except asyncio.CancelledError:
-            pass
-    finally:
-        loop.close()
+    yield runner
+
+    run_task.cancel()
+    main_task.cancel()
+    await run_task
+    await main_task
 
 
 @pytest.mark.integration
-def test_execute_hello_world(runner):
+@pytest.mark.asyncio
+async def test_execute_hello_world(runner):
+    await runner.query('cat("hello world")')
 
-    async def do():
-        await runner.query('cat("hello world")')
-
-    # need to wrap in a task for aiohttp
-    task = runner.loop.create_task(do())
-    runner.loop.run_until_complete(task)
-
-    print(runner.outsock.messages)
     assert 'hello world' in runner.outsock.messages[0][1]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_refresh_token(runner):
+    first_token = None
+    second_token = None
+
+    await runner.query('cat("first world")')
+    first_token = runner.access_token
+    runner.expires_on = datetime.now()
+    await asyncio.sleep(1.05)
+    await runner.query('cat("second world")')
+    second_token = runner.access_token
+
+    assert first_token != second_token  # refreshed!
+    assert 'first world' in runner.outsock.messages[0][1]
+    assert 'second world' in runner.outsock.messages[1][1]
