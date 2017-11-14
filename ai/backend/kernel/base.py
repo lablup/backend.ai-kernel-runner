@@ -241,6 +241,18 @@ class BaseRunner(ABC):
         await self.shutdown()
         self.insock.close()
 
+    async def _init(self, cmdargs):
+        self.task_queue = asyncio.Queue(loop=self.loop)
+        self.init_done = asyncio.Event(loop=self.loop)
+        self._main_task = self.loop.create_task(self.main_loop(cmdargs))
+        self._run_task = self.loop.create_task(self.run_tasks())
+
+    async def _shutdown(self):
+        self._run_task.cancel()
+        self._main_task.cancel()
+        await self._run_task
+        await self._main_task
+
     def run(self, cmdargs):
         # Replace stdin with a "null" file
         # (trying to read stdin will raise EOFError immediately afterwards.)
@@ -251,8 +263,6 @@ class BaseRunner(ABC):
         # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
         self.loop = loop
-        self.task_queue = asyncio.Queue(loop=loop)
-        self.init_done = asyncio.Event(loop=loop)
         self.stopped = asyncio.Event(loop=loop)
 
         def interrupt(loop, stopped):
@@ -267,14 +277,10 @@ class BaseRunner(ABC):
         loop.add_signal_handler(signal.SIGTERM, interrupt, loop, self.stopped)
 
         try:
-            main_task = loop.create_task(self.main_loop(cmdargs))
-            run_task = loop.create_task(self.run_tasks())
+            loop.run_until_complete(self._init(cmdargs))
             loop.run_forever()
             # interrupted
-            run_task.cancel()
-            main_task.cancel()
-            loop.run_until_complete(run_task)
-            loop.run_until_complete(main_task)
+            loop.run_until_complete(self._shutdown())
         finally:
             log.debug('exit.')
             # This should be preserved as long as possible for logging

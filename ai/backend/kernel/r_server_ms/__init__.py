@@ -85,6 +85,7 @@ class Runner(BaseRunner):
         return []
 
     async def interrupt(self):
+        # TODO: cancel session?
         pass
 
     async def _refresh_token(self):

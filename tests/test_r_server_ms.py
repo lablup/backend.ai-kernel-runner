@@ -9,6 +9,9 @@ import pytest
 from ai.backend.kernel.r_server_ms import Runner
 
 
+pytestmark = pytest.mark.asyncio
+
+
 class DummyOutputSocket:
 
     def __init__(self):
@@ -35,28 +38,19 @@ async def runner(event_loop):
     cmdargs.debug = True
 
     runner.loop = event_loop
-    runner.task_queue = asyncio.Queue(loop=event_loop)
-    runner.init_done = asyncio.Event(loop=event_loop)
-
-    main_task = event_loop.create_task(runner.main_loop(cmdargs))
-    run_task = event_loop.create_task(runner.run_tasks())
-
-    await asyncio.sleep(0)
+    await runner._init(cmdargs)
     await runner.init_done.wait()
 
-    # mock
+    # mock outsock
+    runner.outsock.close()
     runner.outsock = DummyOutputSocket()
 
     yield runner
 
-    run_task.cancel()
-    main_task.cancel()
-    await run_task
-    await main_task
+    await runner._shutdown()
 
 
 @pytest.mark.integration
-@pytest.mark.asyncio
 async def test_execute_hello_world(runner):
     await runner.query('cat("hello world")')
 
@@ -64,7 +58,6 @@ async def test_execute_hello_world(runner):
 
 
 @pytest.mark.integration
-@pytest.mark.asyncio
 async def test_refresh_token(runner):
     first_token = None
     second_token = None
@@ -72,7 +65,7 @@ async def test_refresh_token(runner):
     await runner.query('cat("first world")')
     first_token = runner.access_token
     runner.expires_on = datetime.now()
-    await asyncio.sleep(1.05)
+    await asyncio.sleep(0.1)
     await runner.query('cat("second world")')
     second_token = runner.access_token
 
