@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 from functools import partial
+import json
 import logging
 import os
 from pathlib import Path
@@ -10,7 +11,6 @@ import sys
 import aiozmq
 # import uvloop
 import zmq
-import simplejson as json
 
 from .logging import setup_logger
 

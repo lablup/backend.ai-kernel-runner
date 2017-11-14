@@ -8,7 +8,6 @@ requires = [
     'async_timeout>=1.1',
     'aiozmq>=0.7',
     'uvloop>=0.8',
-    'simplejson',
     'namedlist',
     'janus',
     'msgpack-python',

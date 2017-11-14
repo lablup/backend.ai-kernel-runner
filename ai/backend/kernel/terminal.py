@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import fcntl
+import json
 import logging
 import os
 import pty
@@ -12,7 +13,6 @@ import termios
 import traceback
 
 import aiozmq
-import simplejson as json
 import zmq
 
 log = logging.getLogger()

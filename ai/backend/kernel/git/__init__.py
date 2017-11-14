@@ -1,11 +1,11 @@
 import asyncio
+import json
 import logging
 import os
 from pathlib import Path
 import re
 import subprocess
 
-import simplejson as json
 # import pygit2
 # from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
 

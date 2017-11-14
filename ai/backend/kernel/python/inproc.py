@@ -2,13 +2,13 @@ import builtins as builtin_mod
 import code
 from functools import partial
 from io import IOBase, UnsupportedOperation
+import json
 import logging
 import sys
 import traceback
 import threading
 import types
 
-import simplejson as json
 from IPython.core.completer import Completer
 
 import getpass

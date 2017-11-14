@@ -1,8 +1,8 @@
+import json
 import unittest
 import math
 
 from six.moves import builtins
-import simplejson as json
 
 from ai.backend.kernel.python.drawing import (
     canvas, Canvas, Vec2D, Turtle, Colors
