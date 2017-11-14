@@ -1,7 +1,9 @@
+from datetime import datetime, timedelta
 import logging
 import os
 
 import aiohttp
+from yarl import URL
 
 from .. import BaseRunner
 
@@ -16,8 +18,8 @@ class Runner(BaseRunner):
 
     log_prefix = 'r-server'
 
-    def __init__(self, endpoint=None, credentials=None):
-        super().__init__()
+    def __init__(self, loop=None, endpoint=None, credentials=None):
+        super().__init__(loop)
         if endpoint is None:
             endpoint = os.environ.get('MRS_ENDPOINT', 'localhost')
         if credentials is None:
@@ -25,19 +27,15 @@ class Runner(BaseRunner):
                 'username': os.environ.get('MRS_USERNAME', 'anonymous'),
                 'password': os.environ.get('MRS_PASSWORD', 'unknown'),
             }
-        self.http_sess = aiohttp.ClientSession()
+        self.http_sess = None
         self.endpoint = endpoint
         self.credentials = credentials
+        self.access_token = None
+        self.expires_on = None
 
     async def init_with_loop(self):
-        login_url = self.endpoint + '/login'
-        resp = await self.http_sess.post(login_url, json=self.credentials)
-        data = await resp.json()
-        self.access_token = data['access_token']
-        self.auth_hdrs = {
-            'Authorization': 'Bearer {}'.format(self.access_token),
-        }
-        print('access token:', self.access_token)
+        self.http_sess = aiohttp.ClientSession()
+        await self._refresh_token()
         sess_create_url = self.endpoint + '/sessions'
         resp = await self.http_sess.post(
             sess_create_url,
@@ -46,12 +44,23 @@ class Runner(BaseRunner):
         data = await resp.json()
         self.sess_id = data['sessionId']
         print('created session:', self.sess_id)
-        self.init_done.set()
 
     async def shutdown(self):
+        await self._refresh_token()
         sess_url = f'{self.endpoint}/sessions/{self.sess_id}'
-        await self.http_sess.delete(sess_url)
+        resp = await self.http_sess.delete(
+            sess_url,
+            headers=self.auth_hdrs)
+        resp.raise_for_status()
         print('deleted session:', self.sess_id)
+        revoke_url = URL(f'{self.endpoint}/login/refreshToken')
+        revoke_url = revoke_url.update_query({
+            'refreshToken': self.refresh_token,
+        })
+        resp = await self.http_sess.delete(
+            revoke_url,
+            headers=self.auth_hdrs)
+        resp.raise_for_status()
         await self.http_sess.close()
 
     async def build_heuristic(self):
@@ -61,6 +70,7 @@ class Runner(BaseRunner):
         raise NotImplementedError
 
     async def query(self, code_text):
+        await self._refresh_token()
         execute_url = f'{self.endpoint}/sessions/{self.sess_id}/execute'
         resp = await self.http_sess.post(
             execute_url,
@@ -76,3 +86,28 @@ class Runner(BaseRunner):
 
     async def interrupt(self):
         pass
+
+    async def _refresh_token(self):
+        if self.access_token is None:
+            login_url = self.endpoint + '/login'
+            resp = await self.http_sess.post(
+                login_url,
+                json=self.credentials)
+        elif self.expires_on is not None and self.expires_on <= datetime.now():
+            refresh_url = f'{self.endpoint}/login/refreshToken'
+            resp = await self.http_sess.post(
+                refresh_url,
+                headers=self.auth_hdrs,
+                json={
+                    'refreshToken': self.refresh_token,
+                })
+        else:
+            return
+        data = await resp.json()
+        self.access_token = data['access_token']
+        self.refresh_token = data['refresh_token']
+        self.expires_on = datetime.now() \
+                          + timedelta(seconds=int(data['expires_in']))
+        self.auth_hdrs = {
+            'Authorization': f'Bearer {self.access_token}',
+        }
