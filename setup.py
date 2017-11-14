@@ -95,6 +95,9 @@ setup(
         'lua': [],
         'julia': [],
         'r': [],
+        'r_server_ms': [
+            'aiohttp', 'yarl',
+        ],
         'octave': [],
     },
 )
