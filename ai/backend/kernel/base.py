@@ -43,6 +43,8 @@ class BaseRunner(ABC):
         self.loop = None
         self.subproc = None
 
+        self.init_done = asyncio.Event()
+
         # If the subclass implements interatcive user inputs, it should set a
         # asyncio.Queue-like object to self.user_input_queue in the
         # init_with_loop() method.
@@ -51,6 +53,7 @@ class BaseRunner(ABC):
     @abstractmethod
     async def init_with_loop(self):
         """Initialize after the event loop is created."""
+        self.init_done.set()
 
     async def _build(self, build_cmd):
         try:
