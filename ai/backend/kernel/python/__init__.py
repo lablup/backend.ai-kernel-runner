@@ -1,12 +1,12 @@
 import asyncio
 import ctypes
+import json
 import logging
 import os
 from pathlib import Path
 import threading
 
 import janus
-import simplejson as json
 
 from .. import BaseRunner
 from .inproc import PythonInprocRunner
