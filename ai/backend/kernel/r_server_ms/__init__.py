@@ -4,7 +4,7 @@ from .. import BaseRunner
 
 log = logging.getLogger()
 
-ENDPOINT = 'https://...'
+DEFAULT_ENDPOINT = 'https://...'
 
 
 class Runner(BaseRunner):
@@ -15,7 +15,7 @@ class Runner(BaseRunner):
 
     log_prefix = 'r-server'
 
-    def __init__(self):
+    def __init__(self, endpoint=None, credentials=None):
         super().__init__()
 
     async def init_with_loop(self):
