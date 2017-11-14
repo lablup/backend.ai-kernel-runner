@@ -33,7 +33,7 @@ ci_requires = []
 
 setup(
     name='backend.ai-kernel-runner',
-    version='1.0.6',
+    version='1.0.7a0',
     description='User code executors for Backend.AI kernels',
     long_description=Path('README.rst').read_text(),
     url='https://github.com/lablup/backend.ai-kernel-runner',
