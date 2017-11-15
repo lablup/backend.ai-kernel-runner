@@ -33,7 +33,7 @@ async def runner(event_loop):
     # Use the environment variables to provide the config for a test setup.
     runner = Runner(loop=event_loop)
     cmdargs = Namespace()
-    cmdargs.debug = True
+    cmdargs.debug = False
 
     runner.loop = event_loop
     await runner._init(cmdargs)

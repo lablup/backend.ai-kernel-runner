@@ -43,7 +43,7 @@ class Runner(BaseRunner):
             json={})
         data = await resp.json()
         self.sess_id = data['sessionId']
-        print('created session:', self.sess_id)
+        log.debug('created session:', self.sess_id)
 
     async def shutdown(self):
         await self._refresh_token()
@@ -52,7 +52,7 @@ class Runner(BaseRunner):
             sess_url,
             headers=self.auth_hdrs)
         resp.raise_for_status()
-        print('deleted session:', self.sess_id)
+        log.debug('deleted session:', self.sess_id)
         revoke_url = URL(f'{self.endpoint}/login/refreshToken')
         revoke_url = revoke_url.update_query({
             'refreshToken': self.refresh_token,
