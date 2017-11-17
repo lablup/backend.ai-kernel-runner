@@ -55,6 +55,8 @@ class Runner(BaseRunner):
     async def execute_heuristic(self):
         if Path('./main/Main.class').is_file():
             await self.run_subproc(f'{JCR} main.Main')
+        elif Path('./Main.class').is_file():
+            await self.run_subproc(f'{JCR} Main')
         else:
             log.error('cannot find entry class (main.Main).')
 
