@@ -61,8 +61,8 @@ class Runner(BaseRunner):
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
             cmd = (
-                f'gcc {tmpf.name} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS} && '
-                f'./main')
+                f'gcc {tmpf.name} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS}' 
+                f'&& ./main')
             await self.run_subproc(cmd)
 
     async def complete(self, data):

@@ -34,12 +34,14 @@ class Runner(BaseRunner):
 
     async def build_heuristic(self):
         if Path('main.cpp').is_file():
-            cppfiles = Path('.').glob('**/*.cpp')
+            cppfiles = list(Path('.').glob('**/*.cpp'))
+            ofiles = [Path(p.stem + '.o') for p in cppfiles]
+            for cppf in cppfiles:
+                cmd = f'g++ -c {cppf} {DEFAULT_CFLAGS}'
+                await self.run_subproc(cmd)
             cppfiles = ' '.join(map(lambda p: shlex.quote(str(p)), cppfiles))
-            cmd = (
-                f'g++ {cppfiles} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS};'
-                f'./main'
-            )
+            ofiles = ' '.join(map(lambda p: shlex.quote(str(p)), ofiles))
+            cmd = f'g++ {ofiles} {DEFAULT_LDFLAGS} -o ./main'
             await self.run_subproc(cmd)
         else:
             log.error('cannot find build script ("Makefile") '
