@@ -13,8 +13,8 @@ JCC = 'javac'
 JCR = 'java'
 
 # Let Java respect container resource limits
-DEFAULT_JFLAGS = ('-XX:+UnlockExperimentalVMOptions '
-                  '-XX:+UseCGroupMemoryLimitForHeap -d .')
+DEFAULT_JFLAGS = ('-J-XX:+UnlockExperimentalVMOptions '
+                  '-J-XX:+UseCGroupMemoryLimitForHeap -d .')
 
 CHILD_ENV = {
     'TERM': 'xterm',
