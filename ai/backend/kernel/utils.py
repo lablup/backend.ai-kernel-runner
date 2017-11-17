@@ -8,6 +8,8 @@ def find_executable(*paths):
     for path in paths:
         if isinstance(path, (str, bytes)):
             path = Path(path)
+        if not path.exists():
+            continue
         for child in path.iterdir():
             if child.is_file() and child.stat().st_mode & 0o100 != 0:
                 return child
