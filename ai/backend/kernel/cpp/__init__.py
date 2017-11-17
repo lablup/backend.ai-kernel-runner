@@ -9,7 +9,7 @@ from .. import BaseRunner
 log = logging.getLogger()
 
 DEFAULT_CFLAGS = '-Wall'
-DEFAULT_LDFLAGS = '-lrt -lm -pthread'
+DEFAULT_LDFLAGS = '-lrt -lm -pthread -ldl'
 CHILD_ENV = {
     'TERM': 'xterm',
     'LANG': 'C.UTF-8',
