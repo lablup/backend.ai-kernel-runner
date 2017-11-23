@@ -72,7 +72,7 @@ class Runner(BaseRunner):
             commit_info = []
 
             if args.path in ['.', None]:
-                current_dir = Path(f'/proc/{self.pid}/cwd').resolve()
+                current_dir = Path(f'/proc/{self.term.pid}/cwd').resolve()
             else:
                 current_dir = Path(args.path).resolve()
             os.chdir(current_dir)
@@ -102,8 +102,8 @@ class Runner(BaseRunner):
             run_res = subprocess.run(log_cmd, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE)
             stdout = run_res.stdout.decode('utf-8')
-            for log in stdout.split('\n'):
-                items = log.split('||')
+            for gitlog in stdout.split('\n'):
+                items = gitlog.split('||')
                 oid = items[0]
                 parent_ids = items[1].split(' ')
                 message = items[2]
