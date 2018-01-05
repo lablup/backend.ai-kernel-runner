@@ -7,8 +7,10 @@ import os
 from pathlib import Path
 import signal
 import sys
+import time
 
 import aiozmq
+import msgpack
 # import uvloop
 import zmq
 
@@ -54,6 +56,7 @@ class BaseRunner(ABC):
 
         # initialized after loop creation
         self.loop = loop
+        self.started_at: float = time.monotonic()
         self.insock = None
         self.outsock = None
         self.init_done = None
@@ -162,6 +165,16 @@ class BaseRunner(ABC):
         """Interrupt the running user code (only called for query-mode)."""
         pass
 
+    async def _send_status(self):
+        data = {
+            'started_at': self.started_at,
+        }
+        self.outsock.write([
+            b'status',
+            msgpack.packb(data, use_bin_type=True),
+        ])
+        await self.outsock.drain()
+
     async def run_subproc(self, cmd):
         """A thin wrapper for an external command."""
         loop = asyncio.get_event_loop()
@@ -241,6 +254,8 @@ class BaseRunner(ABC):
                     await self._complete(data)
                 elif op_type == 'interrupt':
                     await self._interrupt()
+                elif op_type == 'status':
+                    await self._send_status()
             except asyncio.CancelledError:
                 break
             except NotImplementedError:
