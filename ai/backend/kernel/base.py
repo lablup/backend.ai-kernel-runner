@@ -40,6 +40,18 @@ class BaseRunner(ABC):
         self.child_env = {}
         self.subproc = None
 
+        work_dir = Path(os.getcwd())
+        config_dir = work_dir / '.config'
+        try:
+            evdata = (config_dir / 'environ.txt').read_text()
+            for line in evdata.splitlines():
+                k, v = line.split('=', 1)
+                self.child_env[k] = v
+        except FileNotFoundError:
+            pass
+        except Exception:
+            log.exception('Reading .config/environ.txt failed!')
+
         # initialized after loop creation
         self.loop = loop
         self.insock = None
