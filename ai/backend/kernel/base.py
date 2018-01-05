@@ -206,6 +206,7 @@ class BaseRunner(ABC):
             try:
                 coro = await self.task_queue.get()
                 await coro()
+                self.task_queue.task_done()
             except asyncio.CancelledError:
                 break
 
