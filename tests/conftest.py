@@ -46,14 +46,13 @@ async def runner_proc():
     """ Returns a process which runs kernel runner script and two zmq streams
     for interacting with the runner process.
     """
-    cmd = 'python -m ai.backend.kernel --debug c'
-    args = shlex.split(cmd)
     env = os.environ.copy()
     env['LD_PRELOAD'] = ''
     proc = subprocess.Popen(
-        args,
+        'python -m ai.backend.kernel --debug c',
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        shell=True,
         env=env)
 
     addr = f'tcp://127.0.0.1'

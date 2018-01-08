@@ -32,30 +32,34 @@ class Runner(BaseRunner):
     async def init_with_loop(self):
         pass
 
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         if Path('main.cpp').is_file():
             cppfiles = list(Path('.').glob('**/*.cpp'))
-            ofiles = [Path(p.stem + '.o') for p in cppfiles]
+            ofiles = [Path(p.stem + '.o') for p in sorted(cppfiles)]
             for cppf in cppfiles:
                 cmd = f'g++ -c {cppf} {DEFAULT_CFLAGS}'
-                await self.run_subproc(cmd)
+                ret = await self.run_subproc(cmd)
+                if ret != 0:  # stop if gcc has failed
+                    return ret
             cppfiles = ' '.join(map(lambda p: shlex.quote(str(p)), cppfiles))
             ofiles = ' '.join(map(lambda p: shlex.quote(str(p)), ofiles))
             cmd = f'g++ {ofiles} {DEFAULT_LDFLAGS} -o ./main'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
         else:
             log.error('cannot find build script ("Makefile") '
                       'or the main file ("main.cpp").')
+            return 127
 
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         if Path('./main').is_file():
-            await self.run_subproc('./main')
+            return await self.run_subproc('./main')
         elif Path('./a.out').is_file():
-            await self.run_subproc('./a.out')
+            return await self.run_subproc('./a.out')
         else:
             log.error('cannot find executable ("a.out" or "main").')
+            return 127
 
-    async def query(self, code_text):
+    async def query(self, code_text) -> int:
         with tempfile.NamedTemporaryFile(suffix='.cpp', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
@@ -63,7 +67,7 @@ class Runner(BaseRunner):
                 f'g++ {tmpf.name} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS}'
                 f'&& ./main'
             )
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
 
     async def complete(self, data):
         return []

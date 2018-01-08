@@ -30,7 +30,7 @@ async def pipe_output(stream, outsock, target):
             await outsock.drain()
     except (aiozmq.ZmqStreamClosed, asyncio.CancelledError):
         pass
-    except:
+    except Exception:
         log.exception('unexpected error')
 
 
@@ -83,63 +83,78 @@ class BaseRunner(ABC):
         """Initialize after the event loop is created."""
 
     async def _build(self, build_cmd):
+        ret = 0
         try:
             if build_cmd is None or build_cmd == '':
                 # skipped
                 return
             elif build_cmd == '*':
                 if Path('Makefile').is_file():
-                    await self.run_subproc('make')
+                    ret = await self.run_subproc('make')
                 else:
-                    await self.build_heuristic()
+                    ret = await self.build_heuristic()
             else:
-                await self.run_subproc(build_cmd)
-        except:
+                ret = await self.run_subproc(build_cmd)
+        except Exception:
             log.exception('unexpected error')
+            ret = -1
         finally:
-            self.outsock.write([b'build-finished', b''])
+            payload = json.dumps({
+                'exitCode': ret,
+            }).encode('utf8')
+            self.outsock.write([b'build-finished', payload])
             await self.outsock.drain()
 
     @abstractmethod
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         """Process build step."""
 
     async def _execute(self, exec_cmd):
+        ret = 0
         try:
             if exec_cmd is None or exec_cmd == '':
                 # skipped
                 return
             elif exec_cmd == '*':
-                await self.execute_heuristic()
+                ret = await self.execute_heuristic()
             else:
-                await self.run_subproc(exec_cmd)
-        except:
+                ret = await self.run_subproc(exec_cmd)
+        except Exception:
             log.exception('unexpected error')
+            ret = -1
         finally:
-            self.outsock.write([b'finished', b''])
+            payload = json.dumps({
+                'exitCode': ret,
+            }).encode('utf8')
+            self.outsock.write([b'finished', payload])
             await self.outsock.drain()
 
     @abstractmethod
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         """Process execute step."""
 
     async def _query(self, code_text):
+        ret = 0
         try:
-            return await self.query(code_text)
-        except:
+            ret = await self.query(code_text)
+        except Exception:
             log.exception('unexpected error')
+            ret = -1
         finally:
-            self.outsock.write([b'finished', b''])
+            payload = json.dumps({
+                'exitCode': ret,
+            }).encode('utf8')
+            self.outsock.write([b'finished', payload])
             await self.outsock.drain()
 
     @abstractmethod
-    async def query(self, code_text):
+    async def query(self, code_text) -> int:
         """Run user code by creating a temporary file and compiling it."""
 
     async def _complete(self, completion_data):
         try:
             return await self.complete(completion_data)
-        except:
+        except Exception:
             log.exception('unexpected error')
         finally:
             pass  # no need to "finished" signal
@@ -154,7 +169,7 @@ class BaseRunner(ABC):
                 self.subproc.send_signal(signal.SIGINT)
                 return
             return await self.interrupt()
-        except:
+        except Exception:
             log.exception('unexpected error')
         finally:
             # this is a unidirectional command -- no explicit finish!
@@ -179,6 +194,8 @@ class BaseRunner(ABC):
         """A thin wrapper for an external command."""
         loop = asyncio.get_event_loop()
         try:
+            # errors like "command not found" is handled by the spawned shell.
+            # (the subproc will terminate immediately with return code 127)
             proc = await asyncio.create_subprocess_shell(
                 cmd,
                 env=self.child_env,
@@ -191,10 +208,12 @@ class BaseRunner(ABC):
                 loop.create_task(pipe_output(proc.stdout, self.outsock, 'stdout')),
                 loop.create_task(pipe_output(proc.stderr, self.outsock, 'stderr')),
             ]
-            await proc.wait()
+            retcode = await proc.wait()
             await asyncio.gather(*pipe_tasks)
-        except:
+            return retcode
+        except Exception:
             log.exception('unexpected error')
+            return -1
         finally:
             self.subproc = None
 
@@ -211,7 +230,7 @@ class BaseRunner(ABC):
                 writer.write(text.encode('utf8'))
             await writer.drain()
             writer.close()
-        except:
+        except Exception:
             log.exception('unexpected error (handle_user_input)')
 
     async def run_tasks(self):
@@ -261,7 +280,7 @@ class BaseRunner(ABC):
             except NotImplementedError:
                 log.error('Unsupported operation for this kernel: {0}', op_type)
                 await asyncio.sleep(0)
-            except:
+            except Exception:
                 log.exception('unexpected error')
                 break
         user_input_server.close()

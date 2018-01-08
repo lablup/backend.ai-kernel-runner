@@ -30,30 +30,32 @@ class Runner(BaseRunner):
     async def init_with_loop(self):
         pass
 
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         if Path('Cargo.toml').is_file():
-            await self.run_subproc('cargo build')
+            return await self.run_subproc('cargo build')
         elif Path('main.rs').is_file():
-            await self.run_subproc('rustc -o main main.rs')
+            return await self.run_subproc('rustc -o main main.rs')
         else:
             log.error(
                 'cannot find the main/build file ("Cargo.toml" or "main.rs").')
+            return 127
 
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         out = find_executable('./target/debug', './target/release')
         if out is not None:
-            await self.run_subproc(f'{out}')
+            return await self.run_subproc(f'{out}')
         elif Path('./main').is_file():
-            await self.run_subproc('./main')
+            return await self.run_subproc('./main')
         else:
             log.error('cannot find executable ("main" or target directories).')
+            return 127
 
-    async def query(self, code_text):
+    async def query(self, code_text) -> int:
         with tempfile.NamedTemporaryFile(suffix='.rs', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
             cmd = f'rustc -o main {tmpf.name} && ./main'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
 
     async def complete(self, data):
         return []

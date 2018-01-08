@@ -31,20 +31,22 @@ class Runner(BaseRunner):
 
     async def build_heuristic(self):
         log.info('no build process for R language')
+        return 0
 
     async def execute_heuristic(self):
         if Path('main.R').is_file():
             cmd = 'Rscript main.R'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
         else:
             log.error('cannot find executable ("main.R").')
+            return 127
 
     async def query(self, code_text):
         with tempfile.NamedTemporaryFile(suffix='.R', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
             cmd = f'Rscript {tmpf.name}'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
 
     async def complete(self, data):
         return []

@@ -40,53 +40,46 @@ class Runner(BaseRunner):
     async def init_with_loop(self):
         pass
 
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         if Path('Main.java').is_file():
             javafiles = Path('.').glob('**/*.java')
             javafiles = ' '.join(map(lambda p: shlex.quote(str(p)), javafiles))
             cmd = f'{JCC} {DEFAULT_JFLAGS} {javafiles}'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
         else:
             javafiles = Path('.').glob('**/*.java')
             javafiles = ' '.join(map(lambda p: shlex.quote(str(p)), javafiles))
             cmd = f'{JCC} {DEFAULT_JFLAGS} {javafiles}'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
 
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         if Path('./main/Main.class').is_file():
-            await self.run_subproc(f'{JCR} main.Main')
+            return await self.run_subproc(f'{JCR} main.Main')
         elif Path('./Main.class').is_file():
-            await self.run_subproc(f'{JCR} Main')
+            return await self.run_subproc(f'{JCR} Main')
         else:
             log.error('cannot find entry class (main.Main).')
+            return 127
 
-    async def query(self, code_text):
-        # Parse public class name
-        # If public class exists in source file, get the name. The name of the
-        # file and the (unique) public class name should match in Java. This
-        # approach may not be perfect, so other parsing strategy should be
-        # applied in the future.
-        m = re.search('public[\s]+class[\s]+([\w]+)[\s]*{', code_text)
-        filename = None
-        if m and len(m.groups()) > 0:
-            filename = f'/home/work/' + m.group(1) + '.java'
-
-        # Save code to a temporary file
-        if filename:
-            tmpf = open(filename, 'w+b')
-        else:
-            tmpf = tempfile.NamedTemporaryFile(suffix='.java', dir='.')
-        tmpf.write(code_text.encode('utf8'))
-        tmpf.flush()
-
-        try:
-            cmd = f'{JCC} {filename} && {JCR} {filename.split("/")[-1][:-5]}'
-            await self.run_subproc(cmd)
-        finally:
-            # Close and delete the temporary file.
-            tmpf.close()
-            if filename:
-                os.remove(filename)
+    async def query(self, code_text) -> int:
+        # Try to get the name of the first public class using a simple regular
+        # expression and use it as the name of the main source/class file.
+        # (In Java, the main function must reside in a public class as a public
+        # static void method where the filename must be same to the class name)
+        #
+        # NOTE: This approach won't perfectly handle all edge cases!
+        with tempfile.TemporaryDirectory() as tmpdir:
+            m = re.search('public[\s]+class[\s]+([\w]+)[\s]*{', code_text)
+            if m:
+                mainpath = Path(tmpdir) / (m.group(1) + '.java')
+            else:
+                # TODO: wrap the code using a class skeleton??
+                mainpath = Path(tmpdir) / 'main.java'
+            with open(mainpath, 'w', encoding='utf-8') as tmpf:
+                tmpf.write(code_text)
+            cmd = f'{JCC} {mainpath} && ' \
+                  f'{JCR} -classpath {tmpdir} {mainpath.stem}'
+            return await self.run_subproc(cmd)
 
     async def complete(self, data):
         return []

@@ -63,13 +63,13 @@ class Runner(BaseRunner):
         resp.raise_for_status()
         await self.http_sess.close()
 
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         raise NotImplementedError
 
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         raise NotImplementedError
 
-    async def query(self, code_text):
+    async def query(self, code_text) -> int:
         await self._refresh_token()
         execute_url = f'{self.endpoint}/sessions/{self.sess_id}/execute'
         resp = await self.http_sess.post(
@@ -80,6 +80,7 @@ class Runner(BaseRunner):
             })
         data = await resp.json()
         self.outsock.write(['stdout', data['consoleOutput']])
+        return 0
 
     async def complete(self, data):
         return []

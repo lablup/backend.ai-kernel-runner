@@ -55,21 +55,23 @@ class Runner(BaseRunner):
         self._user_input_queue = janus.Queue(loop=self.loop)
         self.user_input_queue = self._user_input_queue.async_q
 
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         if Path('setup.py').is_file():
             cmd = f'python {DEFAULT_PYFLAGS} setup.py develop'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
         else:
             log.warning('skipping build phase due to missing "setup.py" file')
+            return 0
 
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         if Path('main.py').is_file():
             cmd = f'python {DEFAULT_PYFLAGS} main.py'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
         else:
             log.error('cannot find the main script ("main.py").')
+            return 127
 
-    async def query(self, code_text):
+    async def query(self, code_text) -> int:
         self.ensure_inproc_runner()
         await self.input_queue.async_q.put(code_text)
         # Read the generated outputs until done
@@ -82,6 +84,7 @@ class Runner(BaseRunner):
             if msg is self.sentinel:
                 break
             self.outsock.write(msg)
+        return 0
 
     async def complete(self, data):
         self.ensure_inproc_runner()

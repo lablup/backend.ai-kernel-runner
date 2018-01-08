@@ -32,25 +32,26 @@ class Runner(BaseRunner):
     async def init_with_loop(self):
         pass
 
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         # GHC will generate error if no Main module exist among srcfiles.
         srcfiles = Path('.').glob('**/*.hs')
         srcfiles = ' '.join(map(lambda p: shlex.quote(str(p)), srcfiles))
         cmd = f'ghc --make main {srcfiles}'
-        await self.run_subproc(cmd)
+        return await self.run_subproc(cmd)
 
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         if Path('./main').is_file():
-            await self.run_subproc('./main')
+            return await self.run_subproc('./main')
         else:
             log.error('cannot find executable ("main").')
+            return 127
 
-    async def query(self, code_text):
+    async def query(self, code_text) -> int:
         with tempfile.NamedTemporaryFile(suffix='.hs', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
             cmd = f'runhaskell {tmpf.name}'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
 
     async def complete(self, data):
         return []

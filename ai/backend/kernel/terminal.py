@@ -77,10 +77,11 @@ class Terminal:
         parser_resize.add_argument('cols', type=int)
         parser_resize.set_defaults(func=self.do_resize_term)
 
-    def do_ping(self, args):
+    def do_ping(self, args) -> int:
         self.sock_out.write([b'stdout', b'pong!'])
+        return 0
 
-    def do_resize_term(self, args):
+    def do_resize_term(self, args) -> int:
         origsz = struct.pack('HHHH', 0, 0, 0, 0)
         origsz = fcntl.ioctl(self.fd, termios.TIOCGWINSZ, origsz)
         _, _, origx, origy = struct.unpack('HHHH', origsz)
@@ -91,23 +92,26 @@ class Terminal:
             b'stdout',
             f'OK; terminal resized to {newr} rows and {newc} cols'.encode(),
         ])
+        return 0
 
-    async def handle_command(self, code_txt):
+    async def handle_command(self, code_txt) -> int:
         try:
             if code_txt.startswith('%'):
                 args = self.cmdparser.parse_args(
                     shlex.split(code_txt[1:], comments=True))
                 if asyncio.iscoroutine(args.func) or \
                         asyncio.iscoroutinefunction(args.func):
-                    await args.func(args)
+                    return await args.func(args)
                 else:
-                    args.func(args)
+                    return args.func(args)
             else:
                 self.sock_out.write([b'stderr', b'Invalid command.'])
+                return 127
         except:
             exc_type, exc_val, tb = sys.exc_info()
             trace = traceback.format_exception(exc_type, exc_val, tb)
             self.sock_out.write([b'stderr', trace.encode()])
+            return 1
         finally:
             opts = {
                 'upload_output_files': False,

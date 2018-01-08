@@ -47,14 +47,14 @@ class Runner(BaseRunner):
 
         await self.term.start()
 
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         raise NotImplementedError
 
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         raise NotImplementedError
 
-    async def query(self, code_text):
-        await self.term.handle_command(code_text)
+    async def query(self, code_text) -> int:
+        return await self.term.handle_command(code_text)
 
     async def complete(self, data):
         return []

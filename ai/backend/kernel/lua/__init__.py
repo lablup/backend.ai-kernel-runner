@@ -29,22 +29,24 @@ class Runner(BaseRunner):
     async def init_with_loop(self):
         pass
 
-    async def build_heuristic(self):
+    async def build_heuristic(self) -> int:
         log.info('no build process for lua language')
+        return 0
 
-    async def execute_heuristic(self):
+    async def execute_heuristic(self) -> int:
         if Path('main.lua').is_file():
             cmd = 'lua main.lua'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
         else:
             log.error('cannot find executable ("main.lua").')
+            return 127
 
-    async def query(self, code_text):
+    async def query(self, code_text) -> int:
         with tempfile.NamedTemporaryFile(suffix='.lua', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
             cmd = f'lua {tmpf.name}'
-            await self.run_subproc(cmd)
+            return await self.run_subproc(cmd)
 
     async def complete(self, data):
         return []

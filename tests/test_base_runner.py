@@ -1,4 +1,5 @@
 import asyncio
+import json
 import signal
 import subprocess
 import time
@@ -85,13 +86,28 @@ class TestBaseRunner:
         proc, sender, receiver = runner_proc
         sender.write([b'build', b'echo testing...'])
         records = []
+        exit_code = None
         while True:
             op_type, data = await receiver.read()
             records.append((op_type, data))
             if op_type == b'build-finished':
+                exit_code = json.loads(data)['exitCode']
                 break
+        assert exit_code == 0
         assert records[0][0].decode('ascii').rstrip() == 'stdout'
         assert records[0][1].decode('utf-8').rstrip() == 'testing...'
+
+    @pytest.mark.asyncio
+    async def test_build_cmd_failure(self, runner_proc):
+        proc, sender, receiver = runner_proc
+        sender.write([b'build', b'exit 99'])
+        exit_code = None
+        while True:
+            op_type, data = await receiver.read()
+            if op_type == b'build-finished':
+                exit_code = json.loads(data)['exitCode']
+                break
+        assert exit_code == 99
 
     @pytest.mark.asyncio
     async def test_execution_build_without_cmd(self, base_runner):
@@ -110,13 +126,32 @@ class TestBaseRunner:
         proc, sender, receiver = runner_proc
         sender.write([b'exec', b'echo testing...'])
         records = []
+        exit_code = None
         while True:
             op_type, data = await receiver.read()
             records.append((op_type, data))
             if op_type == b'finished':
+                exit_code = json.loads(data)['exitCode']
                 break
+        assert exit_code == 0
         assert records[0][0].decode('ascii').rstrip() == 'stdout'
         assert records[0][1].decode('utf-8').rstrip() == 'testing...'
+
+    @pytest.mark.asyncio
+    async def test_execute_cmd_failure(self, runner_proc):
+        proc, sender, receiver = runner_proc
+        sender.write([b'exec', b'./non-existent-executable'])
+        records = []
+        exit_code = None
+        while True:
+            op_type, data = await receiver.read()
+            records.append((op_type, data))
+            if op_type == b'finished':
+                exit_code = json.loads(data)['exitCode']
+                break
+        assert exit_code == 127
+        assert records[0][0].decode('ascii').rstrip() == 'stderr'
+        assert 'No such file' in records[0][1].decode('utf-8')
 
     @pytest.mark.parametrize('sig', [signal.SIGINT, signal.SIGTERM])
     def test_interruption(self, runner_proc, sig):
