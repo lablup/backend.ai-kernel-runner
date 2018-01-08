@@ -153,7 +153,7 @@ class TestBaseRunner:
         assert records[0][0].decode('ascii').rstrip() == 'stderr'
         assert 'No such file' in records[0][1].decode('utf-8')
 
-    #@pytest.mark.parametrize('sig', [signal.SIGINT, signal.SIGTERM])
+    # @pytest.mark.parametrize('sig', [signal.SIGINT, signal.SIGTERM])
     @pytest.mark.parametrize('sig', [signal.SIGINT])
     def test_interruption(self, runner_proc, sig):
         proc, sender, receiver = runner_proc
