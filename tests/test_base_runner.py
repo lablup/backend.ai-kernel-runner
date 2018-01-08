@@ -1,7 +1,6 @@
 import asyncio
 import json
 import signal
-import subprocess
 import time
 
 import aiozmq
