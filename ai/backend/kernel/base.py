@@ -312,7 +312,7 @@ class BaseRunner(ABC):
         self.loop = loop
         self.stopped = asyncio.Event(loop=loop)
 
-        def interrupt(loop, stopped):
+        def terminate(loop, stopped):
             if not stopped.is_set():
                 stopped.set()
                 loop.stop()
@@ -320,8 +320,8 @@ class BaseRunner(ABC):
                 print('forced shutdown!', file=sys.stderr)
                 sys.exit(1)
 
-        loop.add_signal_handler(signal.SIGINT, interrupt, loop, self.stopped)
-        loop.add_signal_handler(signal.SIGTERM, interrupt, loop, self.stopped)
+        loop.add_signal_handler(signal.SIGINT, terminate, loop, self.stopped)
+        loop.add_signal_handler(signal.SIGTERM, terminate, loop, self.stopped)
 
         try:
             loop.run_until_complete(self._init(cmdargs))

@@ -1,7 +1,6 @@
 import asyncio
 import json
 import signal
-import subprocess
 import time
 
 import aiozmq
@@ -141,29 +140,28 @@ class TestBaseRunner:
     async def test_execute_cmd_failure(self, runner_proc):
         proc, sender, receiver = runner_proc
         sender.write([b'exec', b'./non-existent-executable'])
-        records = []
         exit_code = None
         while True:
             op_type, data = await receiver.read()
-            records.append((op_type, data))
             if op_type == b'finished':
                 exit_code = json.loads(data)['exitCode']
                 break
         assert exit_code == 127
-        assert records[0][0].decode('ascii').rstrip() == 'stderr'
-        assert 'No such file' in records[0][1].decode('utf-8')
 
     @pytest.mark.parametrize('sig', [signal.SIGINT, signal.SIGTERM])
     def test_interruption(self, runner_proc, sig):
         proc, sender, receiver = runner_proc
+        time.sleep(0.3)  # wait for runner initialization
 
-        time.sleep(1)  # wait for runner initialization
-        proc.send_signal(sig)
-        try:
-            stdout, stderr = proc.communicate(2)
-        except subprocess.TimeoutExpired:
-            pass
-        assert b'exit' in stderr
+        def alarmed(signum, frame):
+            signal.alarm(0)
+            proc.send_signal(sig)
+
+        signal.signal(signal.SIGALRM, alarmed)
+        signal.setitimer(signal.ITIMER_REAL, 0.2)
+
+        proc.wait()
+        assert b'exit' in proc.stderr.read()
 
     @pytest.mark.asyncio
     async def test_run_subproc(self, base_runner):
