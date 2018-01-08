@@ -67,6 +67,9 @@ class BaseRunner(ABC):
         # init_with_loop() method.
         self.user_input_queue = None
 
+        # build status tracker to skip the execute step
+        self._build_success = None
+
     async def _init_with_loop(self):
         if self.init_done is not None:
             self.init_done.clear()
@@ -99,6 +102,7 @@ class BaseRunner(ABC):
             log.exception('unexpected error')
             ret = -1
         finally:
+            self._build_success = (ret == 0)
             payload = json.dumps({
                 'exitCode': ret,
             }).encode('utf8')
@@ -237,6 +241,20 @@ class BaseRunner(ABC):
         while True:
             try:
                 coro = await self.task_queue.get()
+
+                if (self._build_success is not None and
+                        coro.func == self._execute and
+                        not self._build_success):
+                    self._build_success = None
+                    # skip exec step with "command not found" exit code
+                    payload = json.dumps({
+                        'exitCode': 127,
+                    }).encode('utf8')
+                    self.outsock.write([b'finished', payload])
+                    await self.outsock.drain()
+                    self.task_queue.task_done()
+                    continue
+
                 await coro()
                 self.task_queue.task_done()
             except asyncio.CancelledError:

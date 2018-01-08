@@ -148,6 +148,29 @@ class TestBaseRunner:
                 break
         assert exit_code == 127
 
+    @pytest.mark.asyncio
+    async def test_execute_cmd_skip_if_build_failed(self, runner_proc):
+        proc, sender, receiver = runner_proc
+        sender.write([b'build', b'exit 1'])
+        sender.write([b'exec', b'echo hello'])
+        records = []
+        build_exit_code = None
+        exec_exit_code = None
+        while True:
+            op_type, data = await receiver.read()
+            if op_type == b'build-finished':
+                build_exit_code = json.loads(data)['exitCode']
+            elif op_type == b'finished':
+                exec_exit_code = json.loads(data)['exitCode']
+                break
+            elif op_type == b'stdout':
+                records.append(data)
+            elif op_type == b'stderr':
+                print(data.decode('utf8'))
+        assert build_exit_code == 1
+        assert exec_exit_code == 127
+        assert len(records) == 0  # should not have printed anything
+
     @pytest.mark.parametrize('sig', [signal.SIGINT, signal.SIGTERM])
     def test_interruption(self, runner_proc, sig):
         proc, sender, receiver = runner_proc
