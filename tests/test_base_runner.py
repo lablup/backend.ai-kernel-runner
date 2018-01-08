@@ -152,7 +152,7 @@ class TestBaseRunner:
     @pytest.mark.parametrize('sig', [signal.SIGINT, signal.SIGTERM])
     def test_interruption(self, runner_proc, sig):
         proc, sender, receiver = runner_proc
-        time.sleep(1)  # wait for runner initialization
+        time.sleep(0.3)  # wait for runner initialization
 
         def alarmed(signum, frame):
             signal.alarm(0)
@@ -160,11 +160,9 @@ class TestBaseRunner:
 
         signal.signal(signal.SIGALRM, alarmed)
         signal.setitimer(signal.ITIMER_REAL, 0.2)
-        try:
-            stdout, stderr = proc.communicate(2)
-        except subprocess.TimeoutExpired:
-            pass
-        assert b'exit' in stderr
+
+        proc.wait()
+        assert b'exit' in proc.stderr.read()
 
     @pytest.mark.asyncio
     async def test_run_subproc(self, base_runner):
