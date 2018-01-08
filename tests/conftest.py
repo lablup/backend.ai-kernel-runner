@@ -49,6 +49,8 @@ async def runner_proc():
     env['LD_PRELOAD'] = ''
     proc = subprocess.Popen(
         'exec python -m ai.backend.kernel --debug c',
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         shell=True,
         env=env)
 

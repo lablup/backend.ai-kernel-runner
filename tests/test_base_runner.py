@@ -165,8 +165,6 @@ class TestBaseRunner:
                 break
             elif op_type == b'stdout':
                 records.append(data)
-            elif op_type == b'stderr':
-                print(data.decode('utf8'))
         assert build_exit_code == 1
         assert exec_exit_code == 127
         assert len(records) == 0  # should not have printed anything
