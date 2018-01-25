@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 def read_src_version():
-    p = (Path(__file__).parent / 'ai' / 'backend' / 'manager' / '__init__.py')
+    p = (Path(__file__).parent / 'ai' / 'backend' / 'kernel' / '__init__.py')
     src = p.read_text()
     m = re.search(r"^__version__\s*=\s*'([^']+)'", src, re.M)
     return m.group(1)
