@@ -1,5 +1,6 @@
 from setuptools import setup
 from pathlib import Path
+import re
 
 
 def read_src_version():
