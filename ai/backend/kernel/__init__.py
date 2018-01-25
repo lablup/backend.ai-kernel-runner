@@ -9,6 +9,8 @@ __all__ = (
     'Terminal',
 )
 
+__version__ = '1.1.0'
+
 lang_map = {
     'python': 'ai.backend.kernel.python.Runner',
     'c': 'ai.backend.kernel.c.Runner',

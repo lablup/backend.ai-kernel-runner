@@ -1,7 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 from pathlib import Path
 
-# from ai.backend.kernel.version import VERSION
+
+def read_src_version():
+    p = (Path(__file__).parent / 'ai' / 'backend' / 'manager' / '__init__.py')
+    src = p.read_text()
+    m = re.search(r"^__version__\s*=\s*'([^']+)'", src, re.M)
+    return m.group(1)
 
 
 requires = [
@@ -33,7 +38,7 @@ ci_requires = []
 
 setup(
     name='backend.ai-kernel-runner',
-    version='1.0.9',
+    version=read_src_version(),
     description='User code executors for Backend.AI kernels',
     long_description=Path('README.rst').read_text(),
     url='https://github.com/lablup/backend.ai-kernel-runner',
