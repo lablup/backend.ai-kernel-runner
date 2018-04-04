@@ -78,6 +78,7 @@ setup(
         'ai.backend.kernel.r',
         'ai.backend.kernel.r_server_ms',
         'ai.backend.kernel.git',
+        'ai.backend.kernel.vendor.aws_polly',
     ],
     python_requires='>=3.6',
     install_requires=requires,
