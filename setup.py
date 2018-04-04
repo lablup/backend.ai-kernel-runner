@@ -106,5 +106,6 @@ setup(
             'aiohttp', 'yarl',
         ],
         'octave': [],
+        'vendor.aws_polly': ['boto3~=1.6.23', 'botocore~=1.9.23'],
     },
 )
