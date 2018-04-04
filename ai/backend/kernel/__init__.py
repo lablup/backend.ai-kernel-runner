@@ -9,7 +9,7 @@ __all__ = (
     'Terminal',
 )
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 lang_map = {
     'python': 'ai.backend.kernel.python.Runner',
@@ -26,6 +26,7 @@ lang_map = {
     'php': 'ai.backend.kernel.php.Runner',
     'r': 'ai.backend.kernel.r.Runner',
     'git': 'ai.backend.kernel.git.Runner',
+    'vendor.aws_polly': 'ai.backend.kernel.vendor.aws_polly.Runner',
 }
 
 
