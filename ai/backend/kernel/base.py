@@ -21,12 +21,15 @@ log = logging.getLogger()
 
 async def pipe_output(stream, outsock, target):
     assert target in ('stdout', 'stderr')
+    target = target.encode('ascii')
+    fd = sys.stdout.fileno() if target == 'stdout' else sys.stderr.fileno()
     try:
         while True:
             data = await stream.read(4096)
             if not data:
                 break
-            outsock.write([target.encode('ascii'), data])
+            os.write(fd, data)
+            outsock.write([target, data])
             await outsock.drain()
     except (aiozmq.ZmqStreamClosed, asyncio.CancelledError):
         pass
