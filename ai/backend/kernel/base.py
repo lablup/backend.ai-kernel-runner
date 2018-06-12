@@ -9,12 +9,12 @@ import signal
 import sys
 import time
 
-import aiozmq
 import msgpack
-# import uvloop
+import uvloop
 import zmq
 
 from .logging import setup_logger
+from .utils import current_loop
 
 log = logging.getLogger()
 
@@ -29,9 +29,8 @@ async def pipe_output(stream, outsock, target):
             if not data:
                 break
             os.write(fd, data)
-            outsock.write([target, data])
-            await outsock.drain()
-    except (aiozmq.ZmqStreamClosed, asyncio.CancelledError):
+            await outsock.send_multipart([target, data])
+    except asyncio.CancelledError:
         pass
     except Exception:
         log.exception('unexpected error')
@@ -58,7 +57,8 @@ class BaseRunner(ABC):
             log.exception('Reading .config/environ.txt failed!')
 
         # initialized after loop creation
-        self.loop = loop
+        self.loop = loop if loop is not None else current_loop()
+        self.zctx = zmq.asyncio.Context()
         self.started_at: float = time.monotonic()
         self.insock = None
         self.outsock = None
@@ -109,8 +109,7 @@ class BaseRunner(ABC):
             payload = json.dumps({
                 'exitCode': ret,
             }).encode('utf8')
-            self.outsock.write([b'build-finished', payload])
-            await self.outsock.drain()
+            await self.outsock.send_multipart([b'build-finished', payload])
 
     @abstractmethod
     async def build_heuristic(self) -> int:
@@ -133,8 +132,7 @@ class BaseRunner(ABC):
             payload = json.dumps({
                 'exitCode': ret,
             }).encode('utf8')
-            self.outsock.write([b'finished', payload])
-            await self.outsock.drain()
+            await self.outsock.send_multipart([b'finished', payload])
 
     @abstractmethod
     async def execute_heuristic(self) -> int:
@@ -151,8 +149,7 @@ class BaseRunner(ABC):
             payload = json.dumps({
                 'exitCode': ret,
             }).encode('utf8')
-            self.outsock.write([b'finished', payload])
-            await self.outsock.drain()
+            await self.outsock.send_multipart([b'finished', payload])
 
     @abstractmethod
     async def query(self, code_text) -> int:
@@ -180,7 +177,7 @@ class BaseRunner(ABC):
             log.exception('unexpected error')
         finally:
             # this is a unidirectional command -- no explicit finish!
-            await self.outsock.drain()
+            pass
 
     @abstractmethod
     async def interrupt(self):
@@ -191,15 +188,14 @@ class BaseRunner(ABC):
         data = {
             'started_at': self.started_at,
         }
-        self.outsock.write([
+        await self.outsock.send_multipart([
             b'status',
             msgpack.packb(data, use_bin_type=True),
         ])
-        await self.outsock.drain()
 
     async def run_subproc(self, cmd):
         """A thin wrapper for an external command."""
-        loop = asyncio.get_event_loop()
+        loop = current_loop()
         try:
             # errors like "command not found" is handled by the spawned shell.
             # (the subproc will terminate immediately with return code 127)
@@ -232,7 +228,7 @@ class BaseRunner(ABC):
             if self.user_input_queue is None:
                 writer.write(b'<user-input is unsupported>')
             else:
-                self.outsock.write([b'waiting-input', b''])
+                await self.outsock.send_multipart([b'waiting-input', b''])
                 text = await self.user_input_queue.get()
                 writer.write(text.encode('utf8'))
             await writer.drain()
@@ -253,8 +249,7 @@ class BaseRunner(ABC):
                     payload = json.dumps({
                         'exitCode': 127,
                     }).encode('utf8')
-                    self.outsock.write([b'finished', payload])
-                    await self.outsock.drain()
+                    await self.outsock.send_multipart([b'finished', payload])
                     self.task_queue.task_done()
                     continue
 
@@ -264,10 +259,10 @@ class BaseRunner(ABC):
                 break
 
     async def main_loop(self, cmdargs):
-        self.insock = await aiozmq.create_zmq_stream(zmq.PULL,
-                                                     bind='tcp://*:2000')
-        self.outsock = await aiozmq.create_zmq_stream(zmq.PUSH,
-                                                      bind='tcp://*:2001')
+        self.insock = self.zctx.socket(zmq.PULL, io_loop=self.loop)
+        self.insock.bind('tcp://*:2000')
+        self.outsock = self.zctx.socket(zmq.PUSH, io_loop=self.loop)
+        self.outsock.bind('tcp://*:2001')
         user_input_server = \
             await asyncio.start_server(self.handle_user_input,
                                        '127.0.0.1', 65000)
@@ -277,7 +272,7 @@ class BaseRunner(ABC):
         log.debug('start serving...')
         while True:
             try:
-                data = await self.insock.read()
+                data = await self.insock.recv_multipart()
                 op_type = data[0].decode('ascii')
                 text = data[1].decode('utf8')
                 if op_type == 'build':    # batch-mode step 1
@@ -327,8 +322,7 @@ class BaseRunner(ABC):
         sys.stdin = open(os.devnull, 'rb')
 
         # Initialize event loop.
-        # TODO: fix use of uvloop (#2)
-        # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
         self.loop = loop
         self.stopped = asyncio.Event(loop=loop)
