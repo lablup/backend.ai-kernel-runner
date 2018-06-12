@@ -14,6 +14,7 @@ requires = [
     'async_timeout~=3.0',
     'pyzmq~=17.0',
     'uvloop~=0.10.0',
+    'attrs>=18.0',  # to avoid pip 10 resolver issue
     'namedlist',
     'janus>=0.3.0',
     'msgpack~=0.5.6',
