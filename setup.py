@@ -11,20 +11,21 @@ def read_src_version():
 
 
 requires = [
-    'async_timeout>=1.1',
+    'async_timeout~=3.0',
     'aiozmq>=0.7',
-    'uvloop>=0.8',
+    'pyzmq~=17.0',
+    'uvloop~=0.10.0',
     'namedlist',
-    'janus',
-    'msgpack-python',
+    'janus>=0.3.0',
+    'msgpack~=0.5.6',
 ]
 build_requires = [
-    'wheel',
-    'twine',
+    'wheel>=0.31.0',
+    'twine>=1.11.0',
 ]
 test_requires = [
-    'pytest>=3.1',
-    'pytest-asyncio',
+    'pytest~=3.6.0',
+    'pytest-asyncio>=0.8.0',
     'pytest-cov',
     'pytest-mock',
     'asynctest',
