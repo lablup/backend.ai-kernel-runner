@@ -9,6 +9,7 @@ import pytest
 import zmq, zmq.asyncio
 
 from ai.backend.kernel.base import pipe_output
+from ai.backend.kernel.test_utils import MockableZMQAsyncSock
 
 
 @pytest.fixture
@@ -23,34 +24,6 @@ async def sockets(unused_tcp_port):
     outsock.close()
     observer.close()
     zctx.term()
-
-
-class MockableZSock:
-
-    @classmethod
-    def create_mock(cls):
-        return asynctest.Mock(cls())
-
-    def bind(self, addr):
-        pass
-
-    def connect(self, addr):
-        pass
-
-    def close(self):
-        pass
-
-    async def send(self, frame):
-        pass
-
-    async def send_multipart(self, msg):
-        pass
-
-    async def recv(self):
-        pass
-
-    async def recv_multipart(self):
-        pass
 
 
 class TestPipeOutput:
@@ -105,7 +78,7 @@ class TestBaseRunner:
     async def test_skip_build_without_cmd(self, base_runner):
         base_runner.run_subproc = asynctest.CoroutineMock()
         base_runner.build_heuristic = asynctest.CoroutineMock()
-        base_runner.outsock = MockableZSock.create_mock()
+        base_runner.outsock = MockableZMQAsyncSock.create_mock()
 
         await base_runner._build(None)
         await base_runner._build('')
@@ -145,7 +118,7 @@ class TestBaseRunner:
     async def test_execution_build_without_cmd(self, base_runner):
         base_runner.run_subproc = asynctest.CoroutineMock()
         base_runner.build_heuristic = asynctest.CoroutineMock()
-        base_runner.outsock = MockableZSock.create_mock()
+        base_runner.outsock = MockableZMQAsyncSock.create_mock()
 
         await base_runner._execute(None)
         await base_runner._execute('')
@@ -219,7 +192,7 @@ class TestBaseRunner:
 
     @pytest.mark.asyncio
     async def test_run_subproc(self, base_runner):
-        base_runner.outsock = MockableZSock.create_mock()
+        base_runner.outsock = MockableZMQAsyncSock.create_mock()
         await base_runner.run_subproc('echo testing...')
 
         base_runner.outsock.send_multipart.assert_has_awaits([
