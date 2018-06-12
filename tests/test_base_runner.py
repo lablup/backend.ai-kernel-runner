@@ -2,25 +2,58 @@ import asyncio
 import json
 import signal
 import time
+from unittest.mock import call
 
-import aiozmq
 import asynctest
 import pytest
-import zmq
+import zmq, zmq.asyncio
 
 from ai.backend.kernel.base import pipe_output
 
 
-class TestPipeOutput:
+@pytest.fixture
+async def sockets(unused_tcp_port):
+    zctx = zmq.asyncio.Context()
+    addr = f'tcp://127.0.0.1:{unused_tcp_port}'
+    outsock = zctx.socket(zmq.PUSH)
+    outsock.bind(addr)
+    observer = zctx.socket(zmq.PULL)
+    observer.connect(addr)
+    yield outsock, observer
+    outsock.close()
+    observer.close()
+    zctx.term()
 
-    @pytest.fixture
-    async def sockets(self, unused_tcp_port):
-        addr = f'tcp://127.0.0.1:{unused_tcp_port}'
-        outsock = await aiozmq.create_zmq_stream(zmq.PUSH, bind=addr)
-        observer = await aiozmq.create_zmq_stream(zmq.PULL, connect=addr)
-        yield outsock, observer
-        outsock.close()
-        observer.close()
+
+class MockableZSock:
+
+    @classmethod
+    def create_mock(cls):
+        return asynctest.Mock(cls())
+
+    def bind(self, addr):
+        pass
+
+    def connect(self, addr):
+        pass
+
+    def close(self):
+        pass
+
+    async def send(self, frame):
+        pass
+
+    async def send_multipart(self, msg):
+        pass
+
+    async def recv(self):
+        pass
+
+    async def recv_multipart(self):
+        pass
+
+
+class TestPipeOutput:
 
     @pytest.mark.asyncio
     async def test_pipe_output_to_stdout(self, sockets):
@@ -33,7 +66,7 @@ class TestPipeOutput:
         await pipe_output(proc.stdout, outsock, 'stdout')
         await proc.wait()
 
-        type, data = await observer.read()
+        type, data = await observer.recv_multipart()
         assert type.decode('ascii').rstrip() == 'stdout'
         assert data.decode('utf-8').rstrip() == 'stdout...'
 
@@ -48,7 +81,7 @@ class TestPipeOutput:
         await pipe_output(proc.stderr, outsock, 'stderr')
         await proc.wait()
 
-        type, data = await observer.read()
+        type, data = await observer.recv_multipart()
         assert type.decode('ascii').rstrip() == 'stderr'
         assert data.decode('utf-8').rstrip() == 'stderr...'
 
@@ -72,7 +105,7 @@ class TestBaseRunner:
     async def test_skip_build_without_cmd(self, base_runner):
         base_runner.run_subproc = asynctest.CoroutineMock()
         base_runner.build_heuristic = asynctest.CoroutineMock()
-        base_runner.outsock = asynctest.Mock(spec=aiozmq.ZmqStream)
+        base_runner.outsock = MockableZSock.create_mock()
 
         await base_runner._build(None)
         await base_runner._build('')
@@ -83,11 +116,11 @@ class TestBaseRunner:
     @pytest.mark.asyncio
     async def test_build_cmd_execution(self, runner_proc):
         proc, sender, receiver = runner_proc
-        sender.write([b'build', b'echo testing...'])
+        await sender.send_multipart([b'build', b'echo testing...'])
         records = []
         exit_code = None
         while True:
-            op_type, data = await receiver.read()
+            op_type, data = await receiver.recv_multipart()
             records.append((op_type, data))
             if op_type == b'build-finished':
                 exit_code = json.loads(data)['exitCode']
@@ -99,10 +132,10 @@ class TestBaseRunner:
     @pytest.mark.asyncio
     async def test_build_cmd_failure(self, runner_proc):
         proc, sender, receiver = runner_proc
-        sender.write([b'build', b'exit 99'])
+        await sender.send_multipart([b'build', b'exit 99'])
         exit_code = None
         while True:
-            op_type, data = await receiver.read()
+            op_type, data = await receiver.recv_multipart()
             if op_type == b'build-finished':
                 exit_code = json.loads(data)['exitCode']
                 break
@@ -112,7 +145,7 @@ class TestBaseRunner:
     async def test_execution_build_without_cmd(self, base_runner):
         base_runner.run_subproc = asynctest.CoroutineMock()
         base_runner.build_heuristic = asynctest.CoroutineMock()
-        base_runner.outsock = asynctest.Mock(spec=aiozmq.ZmqStream)
+        base_runner.outsock = MockableZSock.create_mock()
 
         await base_runner._execute(None)
         await base_runner._execute('')
@@ -123,11 +156,11 @@ class TestBaseRunner:
     @pytest.mark.asyncio
     async def test_execute_cmd_execution(self, runner_proc):
         proc, sender, receiver = runner_proc
-        sender.write([b'exec', b'echo testing...'])
+        await sender.send_multipart([b'exec', b'echo testing...'])
         records = []
         exit_code = None
         while True:
-            op_type, data = await receiver.read()
+            op_type, data = await receiver.recv_multipart()
             records.append((op_type, data))
             if op_type == b'finished':
                 exit_code = json.loads(data)['exitCode']
@@ -139,10 +172,10 @@ class TestBaseRunner:
     @pytest.mark.asyncio
     async def test_execute_cmd_failure(self, runner_proc):
         proc, sender, receiver = runner_proc
-        sender.write([b'exec', b'./non-existent-executable'])
+        await sender.send_multipart([b'exec', b'./non-existent-executable'])
         exit_code = None
         while True:
-            op_type, data = await receiver.read()
+            op_type, data = await receiver.recv_multipart()
             if op_type == b'finished':
                 exit_code = json.loads(data)['exitCode']
                 break
@@ -151,13 +184,13 @@ class TestBaseRunner:
     @pytest.mark.asyncio
     async def test_execute_cmd_skip_if_build_failed(self, runner_proc):
         proc, sender, receiver = runner_proc
-        sender.write([b'build', b'exit 1'])
-        sender.write([b'exec', b'echo hello'])
+        await sender.send_multipart([b'build', b'exit 1'])
+        await sender.send_multipart([b'exec', b'echo hello'])
         records = []
         build_exit_code = None
         exec_exit_code = None
         while True:
-            op_type, data = await receiver.read()
+            op_type, data = await receiver.recv_multipart()
             if op_type == b'build-finished':
                 build_exit_code = json.loads(data)['exitCode']
             elif op_type == b'finished':
@@ -186,21 +219,12 @@ class TestBaseRunner:
 
     @pytest.mark.asyncio
     async def test_run_subproc(self, base_runner):
-        records = []
-
-        class DummyOut():
-
-            def write(self, msg):
-                records.append(msg)
-
-            async def drain(self):
-                pass
-
-        base_runner.outsock = DummyOut()
+        base_runner.outsock = MockableZSock.create_mock()
         await base_runner.run_subproc('echo testing...')
 
-        assert records[0][0].rstrip() == b'stdout'
-        assert records[0][1].rstrip() == b'testing...'
+        base_runner.outsock.send_multipart.assert_has_awaits([
+            call([b'stdout', b'testing...\n']),
+        ], any_order=True)
 
     def test_run_tasks(self, base_runner, event_loop):
         async def fake_task():

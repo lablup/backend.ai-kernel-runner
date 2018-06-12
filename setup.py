@@ -12,7 +12,6 @@ def read_src_version():
 
 requires = [
     'async_timeout~=3.0',
-    'aiozmq>=0.7',
     'pyzmq~=17.0',
     'uvloop~=0.10.0',
     'namedlist',
@@ -33,7 +32,7 @@ test_requires = [
     'codecov',
 ]
 dev_requires = build_requires + test_requires + [
-    'pytest-sugar',
+    'pytest-sugar>=0.9.1',
 ]
 ci_requires = []
 

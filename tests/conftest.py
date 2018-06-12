@@ -1,10 +1,9 @@
 import os
 import subprocess
 
-import aiozmq
 import pytest
 from six.moves import builtins
-import zmq
+import zmq, zmq.asyncio
 
 from ai.backend.kernel.base import BaseRunner
 
@@ -46,6 +45,7 @@ async def runner_proc():
     for interacting with the runner process.
     """
     env = os.environ.copy()
+    zctx = zmq.asyncio.Context()
     env['LD_PRELOAD'] = ''
     proc = subprocess.Popen(
         'exec python -m ai.backend.kernel --debug c',
@@ -55,11 +55,14 @@ async def runner_proc():
         env=env)
 
     addr = f'tcp://127.0.0.1'
-    sender = await aiozmq.create_zmq_stream(zmq.PUSH, connect=f'{addr}:2000')
-    receiver = await aiozmq.create_zmq_stream(zmq.PULL, connect=f'{addr}:2001')
+    sender = zctx.socket(zmq.PUSH)
+    sender.connect(f'{addr}:2000')
+    receiver = zctx.socket(zmq.PULL)
+    receiver.connect(f'{addr}:2001')
 
     yield proc, sender, receiver
 
     sender.close()
     receiver.close()
     proc.terminate()
+    zctx.term()
