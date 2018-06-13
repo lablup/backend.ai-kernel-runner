@@ -1,10 +1,10 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 from pathlib import Path
 import re
 
 
 def read_src_version():
-    p = (Path(__file__).parent / 'ai' / 'backend' / 'kernel' / '__init__.py')
+    p = (Path(__file__).parent / 'src' / 'ai' / 'backend' / 'kernel' / '__init__.py')
     src = p.read_text()
     m = re.search(r"^__version__\s*=\s*'([^']+)'", src, re.M)
     return m.group(1)
@@ -59,29 +59,8 @@ setup(
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development',
     ],
-    packages=[
-        'ai.backend.kernel',
-        'ai.backend.kernel.python',
-        'ai.backend.kernel.python.display',
-        'ai.backend.kernel.python.drawing',
-        'ai.backend.kernel.python.matplotlib',
-        'ai.backend.kernel.c',
-        'ai.backend.kernel.cpp',
-        'ai.backend.kernel.golang',
-        'ai.backend.kernel.rust',
-        'ai.backend.kernel.java',
-        'ai.backend.kernel.haskell',
-        'ai.backend.kernel.julia',
-        'ai.backend.kernel.lua',
-        'ai.backend.kernel.nodejs',
-        'ai.backend.kernel.octave',
-        'ai.backend.kernel.php',
-        'ai.backend.kernel.r',
-        'ai.backend.kernel.r_server_ms',
-        'ai.backend.kernel.git',
-        'ai.backend.kernel.vendor',
-        'ai.backend.kernel.vendor.aws_polly',
-    ],
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
     python_requires='>=3.6',
     install_requires=requires,
     extras_require={
