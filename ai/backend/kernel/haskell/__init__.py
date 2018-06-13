@@ -17,7 +17,7 @@ CHILD_ENV = {
     'PATH': ('/root/.cabal/bin:/root/.local/bin:/opt/cabal/2.0/bin:'
              '/opt/ghc/8.2.1/bin:/opt/happy/1.19.5/bin:/opt/alex/3.1.7/bin:'
              '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'),
-    'LD_PRELOAD': os.environ.get('LD_PRELOAD', '/home/sorna/patch-libs.so'),
+    'LD_PRELOAD': os.environ.get('LD_PRELOAD', '/home/sorna/libbaihook.so'),
 }
 
 
