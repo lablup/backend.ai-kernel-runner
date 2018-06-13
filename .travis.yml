@@ -21,7 +21,7 @@ jobs:
         - pip install -U pip setuptools
         - pip install -U -r requirements-ci.txt
       script:
-        - python -m flake8 ai/backend tests
+        - python -m flake8 src tests
         - python -m pytest -v -m "not integration" --cov=ai.backend
       after_success:
         - codecov
