@@ -182,6 +182,10 @@ class PythonInprocRunner(threading.Thread):
                 b'html',
                 record.html.encode('utf8'),
             ])
+        elif isinstance(record, tuple):  # raw output
+            assert isinstance(record[0], bytes), 'emit: Raw record must be bytes.'
+            assert isinstance(record[1], bytes), 'emit: Raw record must be bytes.'
+            self.output_queue.put(record)
         else:
             raise TypeError('Unsupported record type.')
 

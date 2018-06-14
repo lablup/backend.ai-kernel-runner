@@ -2,13 +2,10 @@
 A helper package for user-written Python codes.
 '''
 
+from .display import display
+from .package import install
+
 __all__ = (
     'display',
     'install',
 )
-
-# Import legacy helpers
-from ai.backend.kernel.python.display import display
-
-# Import current helpers
-from .package import install
