@@ -9,6 +9,7 @@ import signal
 import sys
 import time
 
+import janus
 import msgpack
 import uvloop
 import zmq
@@ -64,6 +65,7 @@ class BaseRunner(ABC):
         self.outsock = None
         self.init_done = None
         self.task_queue = None
+        self.log_queue = None
 
         # If the subclass implements interatcive user inputs, it should set a
         # asyncio.Queue-like object to self.user_input_queue in the
@@ -105,6 +107,7 @@ class BaseRunner(ABC):
             log.exception('unexpected error')
             ret = -1
         finally:
+            await asyncio.sleep(0.01)  # extra delay to flush logs
             self._build_success = (ret == 0)
             payload = json.dumps({
                 'exitCode': ret,
@@ -129,6 +132,7 @@ class BaseRunner(ABC):
             log.exception('unexpected error')
             ret = -1
         finally:
+            await asyncio.sleep(0.01)  # extra delay to flush logs
             payload = json.dumps({
                 'exitCode': ret,
             }).encode('utf8')
@@ -258,16 +262,21 @@ class BaseRunner(ABC):
             except asyncio.CancelledError:
                 break
 
+    async def _handle_logs(self):
+        log_queue = self.log_queue.async_q
+        try:
+            while True:
+                rec = await log_queue.get()
+                await self.outsock.send_multipart(rec)
+                log_queue.task_done()
+        except asyncio.CancelledError:
+            log_queue.close()
+            await log_queue.wait_closed()
+
     async def main_loop(self, cmdargs):
-        self.insock = self.zctx.socket(zmq.PULL, io_loop=self.loop)
-        self.insock.bind('tcp://*:2000')
-        self.outsock = self.zctx.socket(zmq.PUSH, io_loop=self.loop)
-        self.outsock.bind('tcp://*:2001')
         user_input_server = \
             await asyncio.start_server(self.handle_user_input,
                                        '127.0.0.1', 65000)
-        setup_logger(self.outsock, self.log_prefix, cmdargs.debug)
-
         await self._init_with_loop()
         log.debug('start serving...')
         while True:
@@ -302,19 +311,28 @@ class BaseRunner(ABC):
         user_input_server.close()
         await user_input_server.wait_closed()
         await self.shutdown()
-        self.insock.close()
 
     async def _init(self, cmdargs):
+        self.insock = self.zctx.socket(zmq.PULL, io_loop=self.loop)
+        self.insock.bind('tcp://*:2000')
+        self.outsock = self.zctx.socket(zmq.PUSH, io_loop=self.loop)
+        self.outsock.bind('tcp://*:2001')
+        self.log_queue = janus.Queue(loop=self.loop)
+        setup_logger(self.log_queue.sync_q, self.log_prefix, cmdargs.debug)
         self.task_queue = asyncio.Queue(loop=self.loop)
         self.init_done = asyncio.Event(loop=self.loop)
+        self._log_task = self.loop.create_task(self._handle_logs())
         self._main_task = self.loop.create_task(self.main_loop(cmdargs))
         self._run_task = self.loop.create_task(self.run_tasks())
 
     async def _shutdown(self):
+        self.insock.close()
         self._run_task.cancel()
         self._main_task.cancel()
+        self._log_task.cancel()
         await self._run_task
         await self._main_task
+        await self._log_task
 
     def run(self, cmdargs):
         # Replace stdin with a "null" file
