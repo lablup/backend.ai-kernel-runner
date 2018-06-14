@@ -60,7 +60,7 @@ setup(
         'Topic :: Software Development',
     ],
     package_dir={'': 'src'},
-    packages=PEP420PackageFinder().find('src'),
+    packages=PEP420PackageFinder.find('src'),
     python_requires='>=3.6',
     install_requires=requires,
     extras_require={
