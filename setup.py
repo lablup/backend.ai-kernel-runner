@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, PEP420PackageFinder
 from pathlib import Path
 import re
 
@@ -59,8 +59,8 @@ setup(
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development',
     ],
-    packages=find_packages('src'),
     package_dir={'': 'src'},
+    packages=PEP420PackageFinder().find('src'),
     python_requires='>=3.6',
     install_requires=requires,
     extras_require={
