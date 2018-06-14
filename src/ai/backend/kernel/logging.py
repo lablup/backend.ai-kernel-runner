@@ -1,14 +1,19 @@
+from contextlib import closing
+from io import StringIO
 import logging
 from logging.handlers import QueueHandler
 
 
 class LogQHandler(QueueHandler):
     def enqueue(self, record):
-        msg = self.formatter.format(record)
-        self.queue.put_nowait((
-            b'stderr',
-            (msg + '\n').encode('utf8'),
-        ))
+        with closing(StringIO()) as buf:
+            print(self.formatter.format(record), file=buf)
+            if record.exc_info is not None:
+                print(self.formatter.formatException(record.exc_info), file=buf)
+            self.queue.put_nowait((
+                b'stderr',
+                buf.getvalue().encode('utf8'),
+            ))
 
 
 class BraceLogRecord(logging.LogRecord):
