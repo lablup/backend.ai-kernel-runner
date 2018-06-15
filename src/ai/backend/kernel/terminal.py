@@ -45,6 +45,8 @@ class Terminal:
         self.sock_term_out = None
         self.term_in_task  = None
         self.term_out_task = None
+        self.start_lock = asyncio.Lock(loop=self.loop)
+        self.accept_term_input = False
 
         self.cmdparser = argparse.ArgumentParser()
         self.subparsers = self.cmdparser.add_subparsers()
@@ -63,6 +65,8 @@ class Terminal:
         return 0
 
     async def do_resize_term(self, args) -> int:
+        if self.fd is None:
+            return
         origsz = struct.pack('HHHH', 0, 0, 0, 0)
         origsz = fcntl.ioctl(self.fd, termios.TIOCGWINSZ, origsz)
         _, _, origx, origy = struct.unpack('HHHH', origsz)
@@ -101,6 +105,7 @@ class Terminal:
             await self.sock_out.send_multipart([b'finished', body])
 
     async def start(self):
+        assert not self.accept_term_input
         await safe_close_task(self.term_in_task)
         await safe_close_task(self.term_out_task)
         pid, fd = pty.fork()
@@ -134,14 +139,19 @@ class Terminal:
                                                None, self.loop)
 
             self.term_in_task = self.loop.create_task(self.term_in(term_writer))
-            self.term_out_task = self.loop.create_task(self.term_out(term_reader))
+            self.term_out_task = self.loop.create_task(self.term_out(term_reader))  # noqa
+            self.accept_term_input = True
             await asyncio.sleep(0)
 
     async def restart(self):
         try:
-            await self.sock_term_out.send_multipart([b'Restarting...\r\n'])
-            os.waitpid(self.pid, 0)
-            await self.start()
+            async with self.start_lock:
+                if not self.accept_term_input:
+                    return
+                self.accept_term_input = False
+                await self.sock_term_out.send_multipart([b'Restarting...\r\n'])
+                os.waitpid(self.pid, 0)
+                await self.start()
         except Exception:
             log.exception('Unexpected error during restart of terminal')
 
@@ -151,8 +161,12 @@ class Terminal:
                 data = await self.sock_term_in.recv_multipart()
                 if not data:
                     break
-                term_writer.write(data[0])
-                await term_writer.drain()
+                if self.accept_term_input:
+                    try:
+                        term_writer.write(data[0])
+                        await term_writer.drain()
+                    except IOError:
+                        break
         except asyncio.CancelledError:
             pass
         except Exception:
@@ -170,12 +184,11 @@ class Terminal:
                     # In macOS, this path is taken.
                     break
                 await self.sock_term_out.send_multipart([data])
+            self.fd = None
             if not self.auto_restart:
                 await self.sock_term_out.send_multipart([b'Terminated.\r\n'])
                 return
-            if not self.ev_term.is_set():
-                # TODO: this has race condition if the user repeats
-                #       terminting the shell too fast.
+            if not self.ev_term.is_set() and self.accept_term_input:
                 self.loop.create_task(self.restart())
         except asyncio.CancelledError:
             pass
