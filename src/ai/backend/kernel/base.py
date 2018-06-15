@@ -11,7 +11,6 @@ import time
 
 import janus
 import msgpack
-import uvloop
 import zmq
 
 from .logging import setup_logger
@@ -342,7 +341,7 @@ class BaseRunner(ABC):
         sys.stdin = open(os.devnull, 'rb')
 
         # Initialize event loop.
-        # Terminal does not work with uvloop!
+        # Terminal does not work with uvloop! :(
         # FIXME: asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
         self.loop = loop
