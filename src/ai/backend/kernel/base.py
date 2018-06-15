@@ -317,10 +317,12 @@ class BaseRunner(ABC):
         self.insock.bind('tcp://*:2000')
         self.outsock = self.zctx.socket(zmq.PUSH, io_loop=self.loop)
         self.outsock.bind('tcp://*:2001')
+
         self.log_queue = janus.Queue(loop=self.loop)
-        setup_logger(self.log_queue.sync_q, self.log_prefix, cmdargs.debug)
         self.task_queue = asyncio.Queue(loop=self.loop)
         self.init_done = asyncio.Event(loop=self.loop)
+
+        setup_logger(self.log_queue.sync_q, self.log_prefix, cmdargs.debug)
         self._log_task = self.loop.create_task(self._handle_logs())
         self._main_task = self.loop.create_task(self.main_loop(cmdargs))
         self._run_task = self.loop.create_task(self.run_tasks())
@@ -340,7 +342,8 @@ class BaseRunner(ABC):
         sys.stdin = open(os.devnull, 'rb')
 
         # Initialize event loop.
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        # Terminal does not work with uvloop!
+        # FIXME: asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
         self.loop = loop
         self.stopped = asyncio.Event(loop=loop)

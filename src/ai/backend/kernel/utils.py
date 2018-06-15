@@ -26,3 +26,9 @@ def find_executable(*paths):
             if child.is_file() and child.stat().st_mode & 0o100 != 0:
                 return child
     return None
+
+
+async def safe_close_task(task):
+    if task is not None and not task.done():
+        task.cancel()
+        await task

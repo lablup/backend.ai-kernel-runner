@@ -14,7 +14,7 @@ import traceback
 
 import zmq, zmq.asyncio
 
-from .utils import current_loop
+from .utils import current_loop, safe_close_task
 
 log = logging.getLogger()
 
@@ -43,6 +43,8 @@ class Terminal:
         # For terminal I/O
         self.sock_term_in  = None
         self.sock_term_out = None
+        self.term_in_task  = None
+        self.term_out_task = None
 
         self.cmdparser = argparse.ArgumentParser()
         self.subparsers = self.cmdparser.add_subparsers()
@@ -56,18 +58,18 @@ class Terminal:
         parser_resize.add_argument('cols', type=int)
         parser_resize.set_defaults(func=self.do_resize_term)
 
-    def do_ping(self, args) -> int:
-        self.sock_out.write([b'stdout', b'pong!'])
+    async def do_ping(self, args) -> int:
+        await self.sock_out.send_multipart([b'stdout', b'pong!'])
         return 0
 
-    def do_resize_term(self, args) -> int:
+    async def do_resize_term(self, args) -> int:
         origsz = struct.pack('HHHH', 0, 0, 0, 0)
         origsz = fcntl.ioctl(self.fd, termios.TIOCGWINSZ, origsz)
         _, _, origx, origy = struct.unpack('HHHH', origsz)
         newsz = struct.pack('HHHH', args.rows, args.cols, origx, origy)
         newsz = fcntl.ioctl(self.fd, termios.TIOCSWINSZ, newsz)
         newr, newc, _, _ = struct.unpack('HHHH', newsz)
-        self.sock_out.write([
+        await self.sock_out.send_multipart([
             b'stdout',
             f'OK; terminal resized to {newr} rows and {newc} cols'.encode(),
         ])
@@ -84,76 +86,101 @@ class Terminal:
                 else:
                     return args.func(args)
             else:
-                self.sock_out.write([b'stderr', b'Invalid command.'])
+                await self.sock_out.send_multipart([b'stderr', b'Invalid command.'])
                 return 127
         except:
             exc_type, exc_val, tb = sys.exc_info()
             trace = traceback.format_exception(exc_type, exc_val, tb)
-            self.sock_out.write([b'stderr', trace.encode()])
+            await self.sock_out.send_multipart([b'stderr', trace.encode()])
             return 1
         finally:
             opts = {
                 'upload_output_files': False,
             }
-            self.sock_out.write([b'finished', json.dumps(opts).encode()])
+            body = json.dumps(opts).encode()
+            await self.sock_out.send_multipart([b'finished', body])
 
     async def start(self):
-        self.pid, self.fd = pty.fork()
-        if self.pid == 0:
+        await safe_close_task(self.term_in_task)
+        await safe_close_task(self.term_out_task)
+        pid, fd = pty.fork()
+        if pid == 0:
             args = shlex.split(self.shell_cmd)
             os.execv(args[0], args)
         else:
+            self.pid = pid
+            self.fd = fd
+
             if self.sock_term_in is None:
-                self.sock_term_in  = self.zctx.socket(zmq.SUB)
+                self.sock_term_in = self.zctx.socket(zmq.SUB)
                 self.sock_term_in.bind('tcp://*:2002')
-                self.sock_term_in.transport.subscribe(b'')
+                self.sock_term_in.subscribe(b'')
             if self.sock_term_out is None:
                 self.sock_term_out = self.zctx.socket(zmq.PUB)
                 self.sock_term_out.bind('tcp://*:2003')
 
             term_reader = asyncio.StreamReader()
-            term_read_protocol = asyncio.StreamReaderProtocol(self.term_reader)
+            term_read_protocol = asyncio.StreamReaderProtocol(term_reader)
             await self.loop.connect_read_pipe(
                 lambda: term_read_protocol, os.fdopen(self.fd, 'rb'))
 
+            _reader_factory = lambda: asyncio.StreamReaderProtocol(
+                asyncio.StreamReader())
             term_writer_transport, term_writer_protocol = \
-                await self.loop.connect_write_pipe(asyncio.streams.FlowControlMixin,
-                                                   self.fdopen(self.fd, 'wb'))
+                await self.loop.connect_write_pipe(_reader_factory,
+                                                   os.fdopen(self.fd, 'wb'))
             term_writer = asyncio.StreamWriter(term_writer_transport,
                                                term_writer_protocol,
                                                None, self.loop)
 
             self.term_in_task = self.loop.create_task(self.term_in(term_writer))
             self.term_out_task = self.loop.create_task(self.term_out(term_reader))
+            await asyncio.sleep(0)
+
+    async def restart(self):
+        try:
+            await self.sock_term_out.send_multipart([b'Restarting...\r\n'])
+            os.waitpid(self.pid, 0)
+            await self.start()
+        except Exception:
+            log.exception('Unexpected error during restart of terminal')
 
     async def term_in(self, term_writer):
-        while True:
-            try:
+        try:
+            while True:
                 data = await self.sock_term_in.recv_multipart()
                 if not data:
                     break
                 term_writer.write(data[0])
                 await term_writer.drain()
-            except asyncio.CancelledError:
-                break
-            except OSError:
-                break
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            log.exception('Unexpected error at term_in()')
 
     async def term_out(self, term_reader):
         try:
             while not term_reader.at_eof():
-                data = await term_reader.read(4096)
+                try:
+                    data = await term_reader.read(4096)
+                except IOError:
+                    # In docker containers, this path is taken.
+                    break
+                if not data:
+                    # In macOS, this path is taken.
+                    break
                 await self.sock_term_out.send_multipart([data])
-            # fd is closed
             if not self.auto_restart:
                 await self.sock_term_out.send_multipart([b'Terminated.\r\n'])
                 return
             if not self.ev_term.is_set():
-                await self.sock_term_out.send_multipart([b'Restarting...\r\n'])
-                os.waitpid(self.pid, 0)
-                self.loop.create_task(self.start(), loop=self.loop)
+                # TODO: this has race condition if the user repeats
+                #       terminting the shell too fast.
+                self.loop.create_task(self.restart())
         except asyncio.CancelledError:
             pass
+        except Exception:
+            log.exception('Unexpected error at term_out()')
 
     async def shutdown(self):
         self.term_in_task.cancel()
