@@ -79,7 +79,7 @@ class Runner(BaseRunner):
                 'code': code_text,
             })
         data = await resp.json()
-        self.outsock.write(['stdout', data['consoleOutput']])
+        self.outsock.send_multipart(['stdout', data['consoleOutput']])
         return 0
 
     async def complete(self, data):

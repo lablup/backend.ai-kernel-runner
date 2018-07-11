@@ -53,11 +53,11 @@ class Runner(BaseRunner):
             self.output_queue.async_q.task_done()
             if msg is self.sentinel:
                 break
-            self.outsock.write(msg)
+            self.outsock.send_multipart(msg)
         return 0
 
     async def complete(self, data):
-        self.outsock.write([
+        self.outsock.send_multipart([
             b'completion',
             [],
         ])
