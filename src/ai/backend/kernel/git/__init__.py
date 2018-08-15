@@ -86,7 +86,7 @@ class Runner(BaseRunner):
             stderr = run_res.stderr.decode('utf-8')
             prog = re.compile(r'([a-z0-9]+)\s+(\S+).*')
             if stderr:
-                self.outsock.write([b'stderr', stderr.encode('utf-8')])
+                self.outsock.send_multipart([b'stderr', stderr.encode('utf-8')])
                 return
 
             for line in stdout.split('\n'):
@@ -121,7 +121,7 @@ class Runner(BaseRunner):
                 )
                 commit_info.append(info)
 
-            self.outsock.write([
+            self.outsock.send_multipart([
                 b'media',
                 json.dumps({
                     'type': 'application/vnd.sorna.gitgraph',
