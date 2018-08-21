@@ -25,6 +25,7 @@ lang_map = {
     'octave': 'ai.backend.kernel.octave.Runner',
     'php': 'ai.backend.kernel.php.Runner',
     'r': 'ai.backend.kernel.r.Runner',
+    'scheme': 'ai.backend.kernel.scheme.Runner',
     'git': 'ai.backend.kernel.git.Runner',
     'vendor.aws_polly': 'ai.backend.kernel.vendor.aws_polly.Runner',
 }
