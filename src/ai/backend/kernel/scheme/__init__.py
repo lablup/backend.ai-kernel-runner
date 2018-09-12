@@ -1,10 +1,7 @@
 import logging
-import os
-from pathlib import Path
 import tempfile
 
 from .. import BaseRunner
-from ..utils import find_executable
 
 log = logging.getLogger()
 
