@@ -78,7 +78,7 @@ Then, set the ``CMD`` instruction like below:
 
 .. code-block:: dockerfile
 
-   CMD ["/home/sorna/jail", "-policy", "/home/sorna/policy.yml", \
+   CMD ["/home/backend.ai/jail", "-policy", "/home/backend.ai/policy.yml", \
         "/usr/local/bin/python", "-m", "ai.backend.kernel", "<language>"]
 
 where ``<language>`` should be one of the supported language names defined in

@@ -15,7 +15,7 @@ CHILD_ENV = {
     'HOME': '/home/work',
     'PATH': ('/usr/local/julia:/usr/local/julia/bin:/usr/local/sbin:'
              '/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'),
-    'LD_PRELOAD': os.environ.get('LD_PRELOAD', '/home/sorna/libbaihook.so'),
+    'LD_PRELOAD': os.environ.get('LD_PRELOAD', '/home/backend.ai/libbaihook.so'),
 }
 
 

@@ -24,7 +24,7 @@ build_requires = [
     'twine>=1.11.0',
 ]
 test_requires = [
-    'pytest~=3.6.0',
+    'pytest~=3.7.0',
     'pytest-asyncio>=0.8.0',
     'pytest-cov',
     'pytest-mock',
@@ -71,7 +71,7 @@ setup(
         # kernel-specific requirements
         'python': [
             'six', 'IPython', 'pandas', 'numpy',
-            'matplotlib', 'msgpack-python'],
+            'matplotlib', 'msgpack'],
         'c': [],
         'cpp': [],
         'git': [],

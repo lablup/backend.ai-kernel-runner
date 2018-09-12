@@ -31,7 +31,7 @@ CHILD_ENV = {
         '/bin',
     ]),
     'LD_LIBRARY_PATH': os.environ.get('LD_LIBRARY_PATH', ''),
-    'LD_PRELOAD': '/home/sorna/libbaihook.so',
+    'LD_PRELOAD': '/home/backend.ai/libbaihook.so',
 }
 
 
