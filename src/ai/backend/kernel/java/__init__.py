@@ -43,11 +43,13 @@ class Runner(BaseRunner):
         # TODO: More elegant way of not touching user code? This method does not work
         #       for batch exec (no way of knowing the main file).
         #       Way of monkey patching System.in?
+        modules = 'import java.io.*;'
         static_initializer = (r'\1static{BackendInputStream stream = '
                               r'new BackendInputStream();System.setIn(stream);}')
         patch = Path(os.path.dirname(__file__)) / 'LablupPatches.java'
         altered = re.sub(r'(public[\s]+class[\s]+[\w]+[\s]*{)', static_initializer,
                          code)
+        altered = modules + altered
         altered = altered + '\n\n' + patch.read_text()
         return altered
 
