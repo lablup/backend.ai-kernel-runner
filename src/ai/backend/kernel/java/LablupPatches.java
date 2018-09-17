@@ -1,4 +1,4 @@
-class LablupInputStream extends InputStream {
+class BackendInputStream extends InputStream {
     private StringReader currentReader;
     static Boolean waitUserInput = true;
 
