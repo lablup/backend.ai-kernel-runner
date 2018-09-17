@@ -1,9 +1,11 @@
+import asyncio
 import logging
 import os
 import re
 from pathlib import Path
 import shlex
 import tempfile
+import textwrap
 
 from .. import BaseRunner
 
@@ -37,8 +39,20 @@ class Runner(BaseRunner):
         super().__init__()
         self.child_env = CHILD_ENV
 
+    def _code_for_user_input_server(self, code: str) -> str:
+        # TODO: More elegant way of not touching user code? This method does not work
+        #       for batch exec (no way of knowing the main file).
+        #       Way of monkey patching System.in?
+        static_initializer = (r'\1static{LablupInputStream stream = '
+                              r'new LablupInputStream();System.setIn(stream);}')
+        patch = Path(os.path.dirname(__file__)) / 'LablupPatches.java'
+        altered = re.sub(r'(public[\s]+class[\s]+[\w]+[\s]*{)', static_initializer,
+                         code)
+        altered = altered + '\n\n' + patch.read_text()
+        return altered
+
     async def init_with_loop(self):
-        pass
+        self.user_input_queue = asyncio.Queue()
 
     async def build_heuristic(self) -> int:
         if Path('Main.java').is_file():
@@ -75,8 +89,9 @@ class Runner(BaseRunner):
             else:
                 # TODO: wrap the code using a class skeleton??
                 mainpath = Path(tmpdir) / 'main.java'
+            code = self._code_for_user_input_server(code_text)
             with open(mainpath, 'w', encoding='utf-8') as tmpf:
-                tmpf.write(code_text)
+                tmpf.write(code)
             cmd = f'{JCC} {mainpath} && ' \
                   f'{JCR} -classpath {tmpdir} {mainpath.stem}'
             return await self.run_subproc(cmd)
