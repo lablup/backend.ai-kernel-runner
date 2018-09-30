@@ -4,6 +4,8 @@ import json
 import logging
 import os
 from pathlib import Path
+import shutil
+import site
 import threading
 
 import janus
@@ -46,6 +48,14 @@ class Runner(BaseRunner):
         self.sentinel = object()
         self.input_queue = None
         self.output_queue = None
+
+        # Add sitecustomize.py to site-packages directory.
+        # No permission to access global site packages, we use user local directory.
+        input_src = Path(os.path.dirname(__file__)) / 'sitecustomize.py'
+        # pkgdir = Path(site.getsitepackages()[0])
+        pkgdir = Path(site.USER_SITE)
+        pkgdir.mkdir(parents=True, exist_ok=True)
+        shutil.copy(str(input_src), str(pkgdir / 'sitecustomize.py'))
 
     async def init_with_loop(self):
         self.input_queue = janus.Queue(loop=self.loop)
