@@ -104,7 +104,7 @@ class BaseRunner(ABC):
             log.exception('unexpected error')
             ret = -1
         finally:
-            await asyncio.sleep(0.01) # extra delay to flush logs
+            await asyncio.sleep(0.01)  # extra delay to flush logs
             payload = json.dumps({
                 'exitCode': ret,
             }).encode('utf8')
