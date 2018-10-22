@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import shutil
 import signal
 import sys
 import time
@@ -88,6 +89,34 @@ class BaseRunner(ABC):
     @abstractmethod
     async def init_with_loop(self):
         """Initialize after the event loop is created."""
+
+    async def _clean(self, clean_cmd):
+        ret = 0
+        try:
+            if clean_cmd is None or clean_cmd == '':
+                # skipped
+                return
+            elif clean_cmd == '*':
+                ret = await self.clean_heuristic()
+            else:
+                ret = await self.run_subproc(clean_cmd)
+        except Exception:
+            log.exception('unexpected error')
+            ret = -1
+        finally:
+            await asyncio.sleep(0.01) # extra delay to flush logs
+            payload = json.dumps({
+                'exitCode': ret,
+            }).encode('utf8')
+            await self.outsock.send_multipart([b'clean-finished', payload])
+
+    async def clean_heuristic(self):
+        for f in Path().iterdir():
+            if f.is_file():
+                f.unlink()
+            elif f.is_dir():
+                shutil.rmtree(f, ignore_errors=True)
+        return 0
 
     async def _build(self, build_cmd):
         ret = 0
@@ -283,6 +312,8 @@ class BaseRunner(ABC):
                 data = await self.insock.recv_multipart()
                 op_type = data[0].decode('ascii')
                 text = data[1].decode('utf8')
+                if op_type == 'clean':
+                    await self.task_queue.put(partial(self._clean, text))
                 if op_type == 'build':    # batch-mode step 1
                     await self.task_queue.put(partial(self._build, text))
                 elif op_type == 'exec':   # batch-mode step 2
