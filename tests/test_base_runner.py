@@ -75,6 +75,46 @@ class TestPipeOutput:
 class TestBaseRunner:
 
     @pytest.mark.asyncio
+    async def test_skip_clean_without_cmd(self, base_runner):
+        base_runner.run_subproc = asynctest.CoroutineMock()
+        base_runner.build_heuristic = asynctest.CoroutineMock()
+        base_runner.outsock = MockableZMQAsyncSock.create_mock()
+
+        await base_runner._clean(None)
+        await base_runner._clean('')
+
+        base_runner.run_subproc.assert_not_called()
+        base_runner.build_heuristic.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_clean_cmd_execution(self, runner_proc):
+        proc, sender, receiver = runner_proc
+        await sender.send_multipart([b'clean', b'echo testing...'])
+        records = []
+        exit_code = None
+        while True:
+            op_type, data = await receiver.recv_multipart()
+            records.append((op_type, data))
+            if op_type == b'clean-finished':
+                exit_code = json.loads(data)['exitCode']
+                break
+        assert exit_code == 0
+        assert records[0][0].decode('ascii').rstrip() == 'stdout'
+        assert records[0][1].decode('utf-8').rstrip() == 'testing...'
+
+    @pytest.mark.asyncio
+    async def test_clean_cmd_failure(self, runner_proc):
+        proc, sender, receiver = runner_proc
+        await sender.send_multipart([b'clean', b'exit 1'])
+        exit_code = None
+        while True:
+            op_type, data = await receiver.recv_multipart()
+            if op_type == b'clean-finished':
+                exit_code = json.loads(data)['exitCode']
+                break
+        assert exit_code == 1
+
+    @pytest.mark.asyncio
     async def test_skip_build_without_cmd(self, base_runner):
         base_runner.run_subproc = asynctest.CoroutineMock()
         base_runner.build_heuristic = asynctest.CoroutineMock()
@@ -115,7 +155,7 @@ class TestBaseRunner:
         assert exit_code == 99
 
     @pytest.mark.asyncio
-    async def test_execution_build_without_cmd(self, base_runner):
+    async def test_skip_execute_without_cmd(self, base_runner):
         base_runner.run_subproc = asynctest.CoroutineMock()
         base_runner.build_heuristic = asynctest.CoroutineMock()
         base_runner.outsock = MockableZMQAsyncSock.create_mock()
