@@ -84,7 +84,7 @@ class Runner(BaseRunner):
         #
         # NOTE: This approach won't perfectly handle all edge cases!
         with tempfile.TemporaryDirectory() as tmpdir:
-            m = re.search('public[\s]+class[\s]+([\w]+)[\s]*{', code_text)
+            m = re.search(r'public[\s]+class[\s]+([\w]+)[\s]*{', code_text)
             if m:
                 mainpath = Path(tmpdir) / (m.group(1) + '.java')
             else:
