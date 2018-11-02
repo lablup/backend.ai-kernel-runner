@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import asyncio
+import concurrent.futures
 from functools import partial
 import json
 import logging
@@ -375,6 +376,8 @@ class BaseRunner(ABC):
         # Terminal does not work with uvloop! :(
         # FIXME: asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        loop.set_default_executor(executor)
         self.loop = loop
         self.stopped = asyncio.Event(loop=loop)
 
