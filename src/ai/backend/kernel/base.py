@@ -53,6 +53,7 @@ class BaseRunner(ABC):
             for line in evdata.splitlines():
                 k, v = line.split('=', 1)
                 self.child_env[k] = v
+                os.environ[k] = v
         except FileNotFoundError:
             pass
         except Exception:
