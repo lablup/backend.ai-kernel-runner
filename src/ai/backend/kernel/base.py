@@ -46,8 +46,7 @@ class BaseRunner(ABC):
         self.child_env = {}
         self.subproc = None
 
-        work_dir = Path(os.getcwd())
-        config_dir = work_dir / '.config'
+        config_dir = Path('/home/config')
         try:
             evdata = (config_dir / 'environ.txt').read_text()
             for line in evdata.splitlines():
@@ -113,11 +112,7 @@ class BaseRunner(ABC):
             await self.outsock.send_multipart([b'clean-finished', payload])
 
     async def clean_heuristic(self):
-        for f in Path().iterdir():
-            if f.is_file():
-                f.unlink()
-            elif f.is_dir():
-                shutil.rmtree(f, ignore_errors=True)
+        # it should not do anything by default.
         return 0
 
     async def _build(self, build_cmd):

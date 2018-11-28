@@ -70,7 +70,7 @@ class Runner(BaseRunner):
             cmd = f'python {DEFAULT_PYFLAGS} setup.py develop'
             return await self.run_subproc(cmd)
         else:
-            log.warning('skipping build phase due to missing "setup.py" file')
+            log.warning('skipping the build phase due to missing "setup.py" file')
             return 0
 
     async def execute_heuristic(self) -> int:

@@ -32,6 +32,12 @@ class Runner(BaseRunner):
     async def init_with_loop(self):
         pass
 
+    async def clean_heuristic(self):
+        if Path('Makefile').is_file():
+            return await self.run_subproc('make clean')
+        log.warning('skipping the clean phase due to missing "Makefile".')
+        return 0
+
     async def build_heuristic(self) -> int:
         if Path('main.cpp').is_file():
             cppfiles = list(Path('.').glob('**/*.cpp'))
