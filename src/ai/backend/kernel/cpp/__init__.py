@@ -32,7 +32,7 @@ class Runner(BaseRunner):
     async def init_with_loop(self):
         pass
 
-    async def clean_heuristic(self):
+    async def clean_heuristic(self) -> int:
         if Path('Makefile').is_file():
             return await self.run_subproc('make clean')
         log.warning('skipping the clean phase due to missing "Makefile".')

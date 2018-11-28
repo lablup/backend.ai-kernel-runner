@@ -56,7 +56,7 @@ class BaseRunner(ABC):
         except FileNotFoundError:
             pass
         except Exception:
-            log.exception('Reading .config/environ.txt failed!')
+            log.exception('Reading /home/config/environ.txt failed!')
 
         # initialized after loop creation
         self.loop = loop if loop is not None else current_loop()
@@ -111,7 +111,7 @@ class BaseRunner(ABC):
             }).encode('utf8')
             await self.outsock.send_multipart([b'clean-finished', payload])
 
-    async def clean_heuristic(self):
+    async def clean_heuristic(self) -> int:
         # it should not do anything by default.
         return 0
 
