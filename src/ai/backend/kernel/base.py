@@ -6,7 +6,6 @@ import json
 import logging
 import os
 from pathlib import Path
-import shutil
 import signal
 import sys
 import time
