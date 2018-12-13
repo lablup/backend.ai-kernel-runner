@@ -85,6 +85,8 @@ Inherit ``ai.backend.kernel.BaseRunner`` and implement the following methods:
     - ``port``: The container-side port number to use. The manager/agent has already
       took care of the dynamic binding of this port outside.
 
+    - ``options``: An optional dict that contains extra options for the service.
+
 
 NOTE: Existing codes are good referecnes!
 
