@@ -130,3 +130,6 @@ class Runner(BaseRunner):
             ])
         else:
             raise ValueError('Unsupported show target', args.target)
+
+    async def start_service(self, service_info):
+        return None, {}

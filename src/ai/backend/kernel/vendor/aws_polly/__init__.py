@@ -83,6 +83,9 @@ class Runner(BaseRunner):
             log.error('Interrupt broke the interpreter state -- '
                       'recommended to reset the session.')
 
+    async def start_service(self, service_info):
+        return None, {}
+
     def ensure_inproc_runner(self):
         if self.inproc_runner is None:
             self.inproc_runner = PollyInprocRunner(

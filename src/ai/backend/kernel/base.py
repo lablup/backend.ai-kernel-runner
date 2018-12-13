@@ -235,7 +235,7 @@ class BaseRunner(ABC):
     @abstractmethod
     async def start_service(self, service_info):
         """Start an application service daemon."""
-        pass
+        return None, {}
 
     async def _start_service(self, service_info):
         try:

@@ -140,12 +140,12 @@ class Runner(BaseRunner):
                 '-m', 'jupyter', 'notebook',
                 '--JupyterApp.config_file',
                 config.name,
-            ]
+            ], {}
         elif service_info['name'] == 'ipython':
             return [
                 '/usr/local/bin/python',
                 '-m', 'ipython',
-            ]
+            ], {}
 
     def ensure_inproc_runner(self):
         if self.inproc_runner is None:

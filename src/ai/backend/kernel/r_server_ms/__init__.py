@@ -113,3 +113,6 @@ class Runner(BaseRunner):
         self.auth_hdrs = {
             'Authorization': f'Bearer {self.access_token}',
         }
+
+    async def start_service(self, service_info):
+        return None, {}

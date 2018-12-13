@@ -54,3 +54,6 @@ class Runner(BaseRunner):
     async def interrupt(self):
         # subproc interrupt is already handled by BaseRunner
         pass
+
+    async def start_service(self, service_info):
+        return None, {}
