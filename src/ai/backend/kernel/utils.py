@@ -1,8 +1,12 @@
+import asyncio
 from pathlib import Path
+
+from async_timeout import timeout
 
 __all__ = (
     'find_executable',
     'safe_close_task',
+    'wait_local_port_open',
 )
 
 
@@ -25,3 +29,24 @@ async def safe_close_task(task):
     if task is not None and not task.done():
         task.cancel()
         await task
+
+
+async def wait_local_port_open(port):
+    while True:
+        try:
+            with timeout(10.0):
+                reader, writer = await asyncio.open_connection('127.0.0.1', port)
+        except ConnectionRefusedError:
+            await asyncio.sleep(0.1)
+            continue
+        except asyncio.CancelledError:
+            return
+        except asyncio.TimeoutError:
+            raise
+        except Exception:
+            raise
+        else:
+            writer.close()
+            if hasattr(writer, 'wait_closed'):
+                await writer.wait_closed()
+            break

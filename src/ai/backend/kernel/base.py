@@ -16,6 +16,7 @@ import zmq
 
 from .logging import BraceStyleAdapter, setup_logger
 from .compat import asyncio_run_forever, current_loop
+from .utils import wait_local_port_open
 
 log = BraceStyleAdapter(logging.getLogger())
 
@@ -242,7 +243,7 @@ class BaseRunner(ABC):
         try:
             if service_info['name'] in self.services_running:
                 return
-            cmdargs, env = self.start_service(service_info)
+            cmdargs, env = await self.start_service(service_info)
             if cmdargs is None:
                 log.warning('The service {0} is not supported.',
                             service_info['name'])
@@ -257,8 +258,19 @@ class BaseRunner(ABC):
                 )
                 self.service_processes.append(proc)
             self.services_running.add(service_info['name'])
-        except Exception:
+            await wait_local_port_open(service_info['port'])
+            result = {'status': 'started'}
+            self.outsock.send_multipart([
+                b'service-result',
+                json.dumps(result).encode('utf8'),
+            ])
+        except Exception as e:
             log.exception('unexpected error')
+            result = {'status': 'failed', 'error': repr(e)}
+            self.outsock.send_multipart([
+                b'service-result',
+                json.dumps(result).encode('utf8'),
+            ])
 
     async def run_subproc(self, cmd):
         """A thin wrapper for an external command."""

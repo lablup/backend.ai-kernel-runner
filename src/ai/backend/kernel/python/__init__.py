@@ -126,7 +126,7 @@ class Runner(BaseRunner):
             log.error('Interrupt broke the interpreter state -- '
                       'recommended to reset the session.')
 
-    def start_service(self, service_info):
+    async def start_service(self, service_info):
         if service_info['name'] == 'jupyter':
             with tempfile.NamedTemporaryFile('w',
                     encoding='utf-8', suffix='.py', delete=False) as config:
