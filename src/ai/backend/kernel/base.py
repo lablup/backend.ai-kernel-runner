@@ -242,11 +242,14 @@ class BaseRunner(ABC):
     async def _start_service(self, service_info):
         try:
             if service_info['name'] in self.services_running:
+                result = {'status': 'running'}
                 return
             cmdargs, env = await self.start_service(service_info)
             if cmdargs is None:
                 log.warning('The service {0} is not supported.',
                             service_info['name'])
+                result = {'status': 'failed',
+                          'error': 'unsupported service'}
                 return
             if service_info['protocol'] == 'pty':
                 # TODO: handle pseudo-tty
@@ -260,14 +263,11 @@ class BaseRunner(ABC):
             self.services_running.add(service_info['name'])
             await wait_local_port_open(service_info['port'])
             result = {'status': 'started'}
-            self.outsock.send_multipart([
-                b'service-result',
-                json.dumps(result).encode('utf8'),
-            ])
         except Exception as e:
             log.exception('unexpected error')
             result = {'status': 'failed', 'error': repr(e)}
-            self.outsock.send_multipart([
+        finally:
+            await self.outsock.send_multipart([
                 b'service-result',
                 json.dumps(result).encode('utf8'),
             ])
