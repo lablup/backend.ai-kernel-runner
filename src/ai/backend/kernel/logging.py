@@ -16,11 +16,27 @@ class LogQHandler(QueueHandler):
             ))
 
 
-class BraceLogRecord(logging.LogRecord):
-    def getMessage(self):
-        if self.args is not None:
-            return self.msg.format(*self.args)
-        return self.msg
+class BraceMessage:
+
+    __slots__ = ('fmt', 'args')
+
+    def __init__(self, fmt, args):
+        self.fmt = fmt
+        self.args = args
+
+    def __str__(self):
+        return self.fmt.format(*self.args)
+
+
+class BraceStyleAdapter(logging.LoggerAdapter):
+
+    def __init__(self, logger, extra=None):
+        super().__init__(logger, extra)
+
+    def log(self, level, msg, *args, **kwargs):
+        if self.isEnabledFor(level):
+            msg, kwargs = self.process(msg, kwargs)
+            self.logger._log(level, BraceMessage(msg, args), (), **kwargs)
 
 
 def setup_logger(log_queue, log_prefix, debug):
@@ -34,5 +50,3 @@ def setup_logger(log_queue, log_prefix, debug):
         style='{',
         handlers=loghandlers,
     )
-    _factory = lambda *args, **kwargs: BraceLogRecord(*args, **kwargs)
-    logging.setLogRecordFactory(_factory)

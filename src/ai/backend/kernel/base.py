@@ -14,10 +14,10 @@ import janus
 import msgpack
 import zmq
 
-from .logging import setup_logger
-from .utils import current_loop
+from .logging import BraceStyleAdapter, setup_logger
+from .compat import asyncio_run_forever, current_loop
 
-log = logging.getLogger()
+log = BraceStyleAdapter(logging.getLogger())
 
 
 async def pipe_output(stream, outsock, target):
@@ -35,6 +35,15 @@ async def pipe_output(stream, outsock, target):
         pass
     except Exception:
         log.exception('unexpected error')
+
+
+async def terminate_and_kill(proc):
+    proc.terminate()
+    try:
+        await asyncio.wait_for(proc.wait(), timeout=2.0)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
 
 
 class BaseRunner(ABC):
@@ -66,6 +75,8 @@ class BaseRunner(ABC):
         self.init_done = None
         self.task_queue = None
         self.log_queue = None
+
+        self.service_processes = []
 
         # If the subclass implements interatcive user inputs, it should set a
         # asyncio.Queue-like object to self.user_input_queue in the
@@ -221,6 +232,30 @@ class BaseRunner(ABC):
             msgpack.packb(data, use_bin_type=True),
         ])
 
+    @abstractmethod
+    async def start_service(self, service_info):
+        """Start an application service daemon."""
+        pass
+
+    async def _start_service(self, service_info):
+        try:
+            cmdargs, env = self.start_service(service_info)
+            if cmdargs is None:
+                log.warning('The service {0} is not supported.',
+                            service_info['name'])
+                return
+            if service_info['protocol'] == 'pty':
+                # TODO: handle pseudo-tty
+                raise NotImplementedError
+            else:
+                proc = await asyncio.create_subprocess_exec(
+                    cmdargs,
+                    env={**self.child_env, **env},
+                )
+                self.service_processes.append(proc)
+        except Exception:
+            log.exception('unexpected error')
+
     async def run_subproc(self, cmd):
         """A thin wrapper for an external command."""
         loop = current_loop()
@@ -326,6 +361,9 @@ class BaseRunner(ABC):
                     await self._interrupt()
                 elif op_type == 'status':
                     await self._send_status()
+                elif op_type == 'start-service':  # activate a service port
+                    data = json.loads(text)
+                    await self._start_service(data)
             except asyncio.CancelledError:
                 break
             except NotImplementedError:
@@ -339,6 +377,11 @@ class BaseRunner(ABC):
         await self.shutdown()
 
     async def _init(self, cmdargs):
+        self.loop = current_loop()
+        # Initialize event loop.
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        loop.set_default_executor(executor)
+
         self.insock = self.zctx.socket(zmq.PULL, io_loop=self.loop)
         self.insock.bind('tcp://*:2000')
         self.outsock = self.zctx.socket(zmq.PUSH, io_loop=self.loop)
@@ -354,47 +397,35 @@ class BaseRunner(ABC):
         self._run_task = self.loop.create_task(self.run_tasks())
 
     async def _shutdown(self):
-        self.insock.close()
-        self._run_task.cancel()
-        self._main_task.cancel()
-        self._log_task.cancel()
-        await self._run_task
-        await self._main_task
-        await self._log_task
+        try:
+            self.insock.close()
+            log.debug('shutting down...')
+            self._run_task.cancel()
+            self._main_task.cancel()
+            await self._run_task
+            await self._main_task
+            if self.service_processes:
+                log.debug('terminating service processes...')
+                await asyncio.gather(
+                   terminate_and_kill(proc) for proc in self.service_processes,
+                   return_exceptions=True,
+                )
+            log.debug('terminated.')
+        finally:
+            # allow remaining logs to be flushed.
+            await asyncio.sleep(0.1)
+            self._log_task.cancel()
+            await self._log_task
+            if self.outsock:
+                self.outsock.close()
 
     def run(self, cmdargs):
         # Replace stdin with a "null" file
         # (trying to read stdin will raise EOFError immediately afterwards.)
         sys.stdin = open(os.devnull, 'rb')
 
-        # Initialize event loop.
         # Terminal does not work with uvloop! :(
         # FIXME: asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        loop = asyncio.get_event_loop()
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        loop.set_default_executor(executor)
-        self.loop = loop
-        self.stopped = asyncio.Event(loop=loop)
 
-        def terminate(loop, stopped):
-            if not stopped.is_set():
-                stopped.set()
-                loop.stop()
-            else:
-                print('forced shutdown!', file=sys.stderr)
-                sys.exit(1)
-
-        loop.add_signal_handler(signal.SIGINT, terminate, loop, self.stopped)
-        loop.add_signal_handler(signal.SIGTERM, terminate, loop, self.stopped)
-
-        try:
-            loop.run_until_complete(self._init(cmdargs))
-            loop.run_forever()
-            # interrupted
-            loop.run_until_complete(self._shutdown())
-        finally:
-            log.debug('exit.')
-            # This should be preserved as long as possible for logging
-            if self.outsock:
-                self.outsock.close()
-            loop.close()
+        asyncio_run_forever(self._init(cmdargs), self._shutdown(),
+                            stop_signals={signal.SIGINT, signal.SIGTERM})

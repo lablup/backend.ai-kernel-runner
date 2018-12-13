@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import site
+import tempfile
 import threading
 
 import janus
@@ -124,6 +125,27 @@ class Runner(BaseRunner):
                 ctypes.c_long(0))
             log.error('Interrupt broke the interpreter state -- '
                       'recommended to reset the session.')
+
+    def start_service(self, service_info):
+        if service_info['name'] == 'jupyter':
+            with tempfile.NamedTemporaryFile(
+                    encoding='utf-8', suffix='.py', delete=False) as config:
+                print('c.NoteBookApp.allow_root = True', file=config)
+                print('c.NoteBookApp.ip = "0.0.0.0"', file=config)
+                print('c.NoteBookApp.port = {}'.format(service_info['port'],
+                      file=config)
+                print('c.NoteBookApp.token = ""', file=config)
+            return [
+                '/usr/local/bin/python',
+                '-m', 'jupyter', 'notebook',
+                '--JupyterApp.config_file',
+                config.name,
+            ]
+        elif service_info['name'] == 'ipython':
+            return [
+                '/usr/local/bin/python',
+                '-m', 'ipython',
+            ]
 
     def ensure_inproc_runner(self):
         if self.inproc_runner is None:

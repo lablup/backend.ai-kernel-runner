@@ -1,16 +1,9 @@
-import asyncio
 from pathlib import Path
 
 __all__ = (
-    'current_loop',
     'find_executable',
+    'safe_close_task',
 )
-
-
-if hasattr(asyncio, 'get_running_loop'):
-    current_loop = asyncio.get_running_loop
-else:
-    current_loop = asyncio.get_event_loop
 
 
 def find_executable(*paths):

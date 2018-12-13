@@ -66,6 +66,25 @@ Inherit ``ai.backend.kernel.BaseRunner`` and implement the following methods:
   - *(Non-blocking)* You should implement this method to run asynchronously with
     ongoing code execution.
 
+* ``async def start_service(self, service_info)``
+
+  - If your kernel supports long-running service daemons, start them here.
+    (e.g., Jupyter, TensorBoard, OpenSSH, etc.)
+    A runner subclass simply returns the command arguments as a list and other stuffs
+    will be taken care by the ``BaseRunner``.
+
+  - The ``service_info`` is a dict composed of the following keys extracted from
+    the ``ai.backend.service-ports`` image label:
+
+    - ``name``: The name of service so that you could distinguish which command to
+      execute.
+
+    - ``protocol``: The type of service protocol such as ``"pty"``, ``"tcp"`` and
+      ``"http"``.
+
+    - ``port``: The container-side port number to use. The manager/agent has already
+      took care of the dynamic binding of this port outside.
+
 
 NOTE: Existing codes are good referecnes!
 

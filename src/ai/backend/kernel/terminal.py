@@ -14,9 +14,11 @@ import traceback
 
 import zmq, zmq.asyncio
 
-from .utils import current_loop, safe_close_task
+from .compat import current_loop
+from .logging import BraceStyleAdapter
+from .utils import safe_close_task
 
-log = logging.getLogger()
+log = BraceStyleAdapter(logging.getLogger())
 
 
 class Terminal:
