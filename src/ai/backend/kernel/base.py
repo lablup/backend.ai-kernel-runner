@@ -76,6 +76,7 @@ class BaseRunner(ABC):
         self.task_queue = None
         self.log_queue = None
 
+        self.services_running = set()
         self.service_processes = []
 
         # If the subclass implements interatcive user inputs, it should set a
@@ -239,6 +240,8 @@ class BaseRunner(ABC):
 
     async def _start_service(self, service_info):
         try:
+            if service_info['name'] in self.services_running:
+                return
             cmdargs, env = self.start_service(service_info)
             if cmdargs is None:
                 log.warning('The service {0} is not supported.',
@@ -249,10 +252,11 @@ class BaseRunner(ABC):
                 raise NotImplementedError
             else:
                 proc = await asyncio.create_subprocess_exec(
-                    cmdargs,
+                    *cmdargs,
                     env={**self.child_env, **env},
                 )
                 self.service_processes.append(proc)
+            self.services_running.add(service_info['name'])
         except Exception:
             log.exception('unexpected error')
 

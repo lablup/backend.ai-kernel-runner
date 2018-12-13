@@ -128,17 +128,18 @@ class Runner(BaseRunner):
 
     def start_service(self, service_info):
         if service_info['name'] == 'jupyter':
-            with tempfile.NamedTemporaryFile(
+            with tempfile.NamedTemporaryFile('w',
                     encoding='utf-8', suffix='.py', delete=False) as config:
-                print('c.NoteBookApp.allow_root = True', file=config)
-                print('c.NoteBookApp.ip = "0.0.0.0"', file=config)
-                print('c.NoteBookApp.port = {}'.format(service_info['port']),
+                print('c.NotebookApp.allow_root = True', file=config)
+                print('c.NotebookApp.ip = "0.0.0.0"', file=config)
+                print('c.NotebookApp.port = {}'.format(service_info['port']),
                       file=config)
-                print('c.NoteBookApp.token = ""', file=config)
+                print('c.NotebookApp.token = ""', file=config)
             return [
                 '/usr/local/bin/python',
                 '-m', 'jupyter', 'notebook',
-                '--JupyterApp.config_file',
+                '--no-browser',
+                '--config',
                 config.name,
             ], {}
         elif service_info['name'] == 'ipython':
