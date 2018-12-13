@@ -1,4 +1,5 @@
 import asyncio
+import signal
 
 __all__ = (
     'current_loop',

@@ -132,7 +132,7 @@ class Runner(BaseRunner):
                     encoding='utf-8', suffix='.py', delete=False) as config:
                 print('c.NoteBookApp.allow_root = True', file=config)
                 print('c.NoteBookApp.ip = "0.0.0.0"', file=config)
-                print('c.NoteBookApp.port = {}'.format(service_info['port'],
+                print('c.NoteBookApp.port = {}'.format(service_info['port']),
                       file=config)
                 print('c.NoteBookApp.token = ""', file=config)
             return [

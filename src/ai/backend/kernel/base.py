@@ -380,7 +380,7 @@ class BaseRunner(ABC):
         self.loop = current_loop()
         # Initialize event loop.
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-        loop.set_default_executor(executor)
+        self.loop.set_default_executor(executor)
 
         self.insock = self.zctx.socket(zmq.PULL, io_loop=self.loop)
         self.insock.bind('tcp://*:2000')
@@ -407,7 +407,7 @@ class BaseRunner(ABC):
             if self.service_processes:
                 log.debug('terminating service processes...')
                 await asyncio.gather(
-                   terminate_and_kill(proc) for proc in self.service_processes,
+                   *(terminate_and_kill(proc) for proc in self.service_processes),
                    return_exceptions=True,
                 )
             log.debug('terminated.')
