@@ -128,8 +128,8 @@ class Runner(BaseRunner):
 
     async def start_service(self, service_info):
         if service_info['name'] == 'jupyter':
-            with tempfile.NamedTemporaryFile('w',
-                    encoding='utf-8', suffix='.py', delete=False) as config:
+            with tempfile.NamedTemporaryFile(
+                    'w', encoding='utf-8', suffix='.py', delete=False) as config:
                 print('c.NotebookApp.allow_root = True', file=config)
                 print('c.NotebookApp.ip = "0.0.0.0"', file=config)
                 print('c.NotebookApp.port = {}'.format(service_info['port']),

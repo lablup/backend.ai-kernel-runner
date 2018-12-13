@@ -423,8 +423,8 @@ class BaseRunner(ABC):
             if self.service_processes:
                 log.debug('terminating service processes...')
                 await asyncio.gather(
-                   *(terminate_and_kill(proc) for proc in self.service_processes),
-                   return_exceptions=True,
+                    *(terminate_and_kill(proc) for proc in self.service_processes),
+                    return_exceptions=True,
                 )
             log.debug('terminated.')
         finally:

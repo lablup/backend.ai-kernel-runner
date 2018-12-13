@@ -91,4 +91,3 @@ def asyncio_run_forever(setup_coro, shutdown_coro, *,
         finally:
             asyncio.set_event_loop(None)
             loop.close()
-
