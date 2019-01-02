@@ -75,9 +75,10 @@ class Terminal:
         newsz = struct.pack('HHHH', args.rows, args.cols, origx, origy)
         newsz = fcntl.ioctl(self.fd, termios.TIOCSWINSZ, newsz)
         newr, newc, _, _ = struct.unpack('HHHH', newsz)
+        msg = 'OK; terminal resized to {} rows and {} cols'.format(newr, newc)
         await self.sock_out.send_multipart([
             b'stdout',
-            f'OK; terminal resized to {newr} rows and {newc} cols'.encode(),
+            msg.encode(),
         ])
         return 0
 

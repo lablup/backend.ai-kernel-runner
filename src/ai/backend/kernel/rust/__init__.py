@@ -43,7 +43,7 @@ class Runner(BaseRunner):
     async def execute_heuristic(self) -> int:
         out = find_executable('./target/debug', './target/release')
         if out is not None:
-            return await self.run_subproc(f'{out}')
+            return await self.run_subproc(str(out))
         elif Path('./main').is_file():
             return await self.run_subproc('./main')
         else:
@@ -54,7 +54,7 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.rs', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = f'rustc -o main {tmpf.name} && ./main'
+            cmd = 'rustc -o main {} && ./main'.format(tmpf.name)
             return await self.run_subproc(cmd)
 
     async def complete(self, data):

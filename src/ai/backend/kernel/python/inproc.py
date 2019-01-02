@@ -38,8 +38,8 @@ class ConsoleOutput(IOBase):
         return False
 
     def fileno(self):
-        raise OSError(f'{self._stream_type} has no file descriptor '
-                      'because it is a virtual console.')
+        raise OSError('{} has no file descriptor because it is a virtual console.'
+                      .format(self._stream_type))
 
     def read(self, *args, **kwargs):
         raise UnsupportedOperation()

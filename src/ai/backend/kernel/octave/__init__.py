@@ -46,7 +46,7 @@ class Runner(BaseRunner):
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
             # TODO: support graphics output to display
-            cmd = f'octave-cli {tmpf.name}'
+            cmd = 'octave-cli {}'.format(tmpf.name)
             return await self.run_subproc(cmd)
 
     async def complete(self, data):

@@ -11,7 +11,7 @@ def read_src_version():
 
 
 requires = [
-    'async_timeout~=3.0',
+    'async_timeout>=2.0',
     'pyzmq~=17.0',
     'uvloop~=0.11.0',
     'attrs>=18.0',  # to avoid pip 10 resolver issue
@@ -61,7 +61,7 @@ setup(
     ],
     package_dir={'': 'src'},
     packages=PEP420PackageFinder.find('src'),
-    python_requires='>=3.6',
+    python_requires='>=3.5.2',
     install_requires=requires,
     extras_require={
         'build': build_requires,
@@ -85,7 +85,7 @@ setup(
         'julia': [],
         'r': [],
         'r_server_ms': [
-            'aiohttp', 'yarl',
+            'aiohttp>=2.0', 'yarl',
         ],
         'octave': [],
         'scheme': [],

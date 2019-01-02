@@ -36,7 +36,7 @@ class Runner(BaseRunner):
         # GHC will generate error if no Main module exist among srcfiles.
         srcfiles = Path('.').glob('**/*.hs')
         srcfiles = ' '.join(map(lambda p: shlex.quote(str(p)), srcfiles))
-        cmd = f'ghc --make main {srcfiles}'
+        cmd = 'ghc --make main {}'.format(srcfiles)
         return await self.run_subproc(cmd)
 
     async def execute_heuristic(self) -> int:
@@ -50,7 +50,7 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.hs', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = f'runhaskell {tmpf.name}'
+            cmd = 'runhaskell {}'.format(tmpf.name)
             return await self.run_subproc(cmd)
 
     async def complete(self, data):

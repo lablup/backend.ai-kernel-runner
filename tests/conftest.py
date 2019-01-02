@@ -40,29 +40,42 @@ def base_runner():
 
 
 @pytest.fixture
-async def runner_proc():
+def runner_proc(event_loop):
     """ Returns a process which runs kernel runner script and two zmq streams
     for interacting with the runner process.
     """
-    env = os.environ.copy()
-    zctx = zmq.asyncio.Context()
-    env['LD_PRELOAD'] = ''
-    proc = subprocess.Popen(
-        'exec python -m ai.backend.kernel --debug c',
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True,
-        env=env)
 
-    addr = f'tcp://127.0.0.1'
-    sender = zctx.socket(zmq.PUSH)
-    sender.connect(f'{addr}:2000')
-    receiver = zctx.socket(zmq.PULL)
-    receiver.connect(f'{addr}:2001')
+    zctx = None
+    proc = None
+    sender = None
+    receiver = None
 
-    yield proc, sender, receiver
+    async def init():
+        nonlocal zctx, proc, sender, receiver
+        env = os.environ.copy()
+        zctx = zmq.asyncio.Context()
+        env['LD_PRELOAD'] = ''
+        proc = subprocess.Popen(
+            'exec python -m ai.backend.kernel --debug c',
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            env=env)
 
-    sender.close()
-    receiver.close()
-    proc.terminate()
-    zctx.term()
+        addr = 'tcp://127.0.0.1'
+        sender = zctx.socket(zmq.PUSH)
+        sender.connect('{}:2000'.format(addr))
+        receiver = zctx.socket(zmq.PULL)
+        receiver.connect('{}:2001'.format(addr))
+
+    async def shutdown():
+        sender.close()
+        receiver.close()
+        proc.terminate()
+        zctx.term()
+
+    event_loop.run_until_complete(init())
+    try:
+        yield proc, sender, receiver
+    finally:
+        event_loop.run_until_complete(shutdown())

@@ -72,7 +72,7 @@ class Runner(BaseRunner):
             commit_info = []
 
             if args.path in ['.', None]:
-                current_dir = Path(f'/proc/{self.term.pid}/cwd').resolve()
+                current_dir = Path('/proc/{}/cwd'.format(self.term.pid)).resolve()
             else:
                 current_dir = Path(args.path).resolve()
             os.chdir(current_dir)

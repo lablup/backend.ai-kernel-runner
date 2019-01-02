@@ -59,19 +59,19 @@ class Runner(BaseRunner):
         if Path('Main.java').is_file():
             javafiles = Path('.').glob('**/*.java')
             javafiles = ' '.join(map(lambda p: shlex.quote(str(p)), javafiles))
-            cmd = f'{JCC} {DEFAULT_JFLAGS} {javafiles}'
+            cmd = '{} {} {}'.format(JCC, DEFAULT_JFLAGS, javafiles)
             return await self.run_subproc(cmd)
         else:
             javafiles = Path('.').glob('**/*.java')
             javafiles = ' '.join(map(lambda p: shlex.quote(str(p)), javafiles))
-            cmd = f'{JCC} {DEFAULT_JFLAGS} {javafiles}'
+            cmd = '{} {} {}'.format(JCC, DEFAULT_JFLAGS, javafiles)
             return await self.run_subproc(cmd)
 
     async def execute_heuristic(self) -> int:
         if Path('./main/Main.class').is_file():
-            return await self.run_subproc(f'{JCR} main.Main')
+            return await self.run_subproc('{} main.Main'.format(JCR))
         elif Path('./Main.class').is_file():
-            return await self.run_subproc(f'{JCR} Main')
+            return await self.run_subproc('{} Main'.format(JCR))
         else:
             log.error('cannot find entry class (main.Main).')
             return 127
@@ -93,8 +93,9 @@ class Runner(BaseRunner):
             code = self._code_for_user_input_server(code_text)
             with open(mainpath, 'w', encoding='utf-8') as tmpf:
                 tmpf.write(code)
-            cmd = f'{JCC} {mainpath} && ' \
-                  f'{JCR} -classpath {tmpdir} {mainpath.stem}'
+            cmd = '{} {} && {} -classpath {} {}'.format(
+                JCC, mainpath, JCR, tmpdir, mainpath.stem,
+            )
             return await self.run_subproc(cmd)
 
     async def complete(self, data):

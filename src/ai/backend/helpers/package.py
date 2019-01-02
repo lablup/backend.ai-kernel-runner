@@ -28,7 +28,8 @@ def install(pkgname, force_install=False):
 
         for pkg in installed_pkgs:
             if pkgname.lower() == pkg.name.lower():
-                print(f"'{pkg.name}' is already installed (version: {pkg.version}).")
+                print("'{}' is already installed (version: {})."
+                      .format(pkg.name, pkg.version))
                 return
 
     sys.stdout.flush()

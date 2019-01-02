@@ -70,7 +70,7 @@ class BaseRunner(ABC):
         # initialized after loop creation
         self.loop = loop if loop is not None else current_loop()
         self.zctx = zmq.asyncio.Context()
-        self.started_at: float = time.monotonic()
+        self.started_at = time.monotonic()
         self.insock = None
         self.outsock = None
         self.init_done = None

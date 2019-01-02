@@ -68,7 +68,7 @@ class Runner(BaseRunner):
 
     async def build_heuristic(self) -> int:
         if Path('setup.py').is_file():
-            cmd = f'python {DEFAULT_PYFLAGS} setup.py develop'
+            cmd = 'python {} setup.py develop'.format(DEFAULT_PYFLAGS)
             return await self.run_subproc(cmd)
         else:
             log.warning('skipping the build phase due to missing "setup.py" file')
@@ -76,7 +76,7 @@ class Runner(BaseRunner):
 
     async def execute_heuristic(self) -> int:
         if Path('main.py').is_file():
-            cmd = f'python {DEFAULT_PYFLAGS} main.py'
+            cmd = 'python {} main.py'.format(DEFAULT_PYFLAGS)
             return await self.run_subproc(cmd)
         else:
             log.error('cannot find the main script ("main.py").')

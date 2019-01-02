@@ -36,7 +36,7 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.scm', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = f'scheme --quiet < {tmpf.name}'
+            cmd = 'scheme --quiet < {}'.format(tmpf.name)
             return await self.run_subproc(cmd)
 
     async def complete(self, data):

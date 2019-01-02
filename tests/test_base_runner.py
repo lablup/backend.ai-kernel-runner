@@ -13,17 +13,30 @@ from ai.backend.kernel.test_utils import MockableZMQAsyncSock
 
 
 @pytest.fixture
-async def sockets(unused_tcp_port):
-    zctx = zmq.asyncio.Context()
-    addr = f'tcp://127.0.0.1:{unused_tcp_port}'
-    outsock = zctx.socket(zmq.PUSH)
-    outsock.bind(addr)
-    observer = zctx.socket(zmq.PULL)
-    observer.connect(addr)
-    yield outsock, observer
-    outsock.close()
-    observer.close()
-    zctx.term()
+def sockets(event_loop, unused_tcp_port):
+    zctx = None
+    outsock = None
+    observer = None
+
+    async def init():
+        nonlocal zctx, outsock, observer
+        zctx = zmq.asyncio.Context()
+        addr = 'tcp://127.0.0.1:{}'.format(unused_tcp_port)
+        outsock = zctx.socket(zmq.PUSH)
+        outsock.bind(addr)
+        observer = zctx.socket(zmq.PULL)
+        observer.connect(addr)
+
+    async def shutdown():
+        outsock.close()
+        observer.close()
+        zctx.term()
+
+    event_loop.run_until_complete(init())
+    try:
+        yield outsock, observer
+    finally:
+        event_loop.run_until_complete(shutdown())
 
 
 class TestPipeOutput:

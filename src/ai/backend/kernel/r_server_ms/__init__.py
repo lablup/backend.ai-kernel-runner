@@ -47,13 +47,13 @@ class Runner(BaseRunner):
 
     async def shutdown(self):
         await self._refresh_token()
-        sess_url = f'{self.endpoint}/sessions/{self.sess_id}'
+        sess_url = '{}/sessions/{}'.format(self.endpoint, self.sess_id)
         resp = await self.http_sess.delete(
             sess_url,
             headers=self.auth_hdrs)
         resp.raise_for_status()
         log.debug('deleted session:', self.sess_id)
-        revoke_url = URL(f'{self.endpoint}/login/refreshToken')
+        revoke_url = URL('{}/login/refreshToken'.format(self.endpoint))
         revoke_url = revoke_url.update_query({
             'refreshToken': self.refresh_token,
         })
@@ -71,7 +71,9 @@ class Runner(BaseRunner):
 
     async def query(self, code_text) -> int:
         await self._refresh_token()
-        execute_url = f'{self.endpoint}/sessions/{self.sess_id}/execute'
+        execute_url = '{}/sessions/{}/execute'.format(
+            self.endpoint, self.sess_id,
+        )
         resp = await self.http_sess.post(
             execute_url,
             headers=self.auth_hdrs,
@@ -96,7 +98,7 @@ class Runner(BaseRunner):
                 login_url,
                 json=self.credentials)
         elif self.expires_on is not None and self.expires_on <= datetime.now():
-            refresh_url = f'{self.endpoint}/login/refreshToken'
+            refresh_url = '{}/login/refreshToken'.format(self.endpoint)
             resp = await self.http_sess.post(
                 refresh_url,
                 headers=self.auth_hdrs,
@@ -111,7 +113,7 @@ class Runner(BaseRunner):
         self.expires_on = datetime.now() \
                           + timedelta(seconds=int(data['expires_in']))
         self.auth_hdrs = {
-            'Authorization': f'Bearer {self.access_token}',
+            'Authorization': 'Bearer {}'.format(self.access_token),
         }
 
     async def start_service(self, service_info):

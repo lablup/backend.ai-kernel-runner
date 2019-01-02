@@ -29,23 +29,32 @@ class DummyOutputSocket:
 
 
 @pytest.fixture
-async def runner(event_loop):
+def runner(event_loop):
     # Use the environment variables to provide the config for a test setup.
-    runner = Runner(loop=event_loop)
-    cmdargs = Namespace()
-    cmdargs.debug = False
+    runner = None
 
-    runner.loop = event_loop
-    await runner._init(cmdargs)
-    await runner.init_done.wait()
+    async def init():
+        nonlocal runner
+        runner = Runner(loop=event_loop)
+        cmdargs = Namespace()
+        cmdargs.debug = False
 
-    # mock outsock
-    runner.outsock.close()
-    runner.outsock = DummyOutputSocket()
+        runner.loop = event_loop
+        await runner._init(cmdargs)
+        await runner.init_done.wait()
 
-    yield runner
+        # mock outsock
+        runner.outsock.close()
+        runner.outsock = DummyOutputSocket()
 
-    await runner._shutdown()
+    async def shutdown():
+        await runner._shutdown()
+
+    event_loop.run_until_complete(init())
+    try:
+        yield runner
+    finally:
+        event_loop.run_until_complete(shutdown())
 
 
 @pytest.mark.integration

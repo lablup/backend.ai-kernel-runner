@@ -44,13 +44,13 @@ class Runner(BaseRunner):
             cfiles = list(Path('.').glob('**/*.c'))
             ofiles = [Path(p.stem + '.o') for p in sorted(cfiles)]
             for cf in cfiles:
-                cmd = f'gcc -c {cf} {DEFAULT_CFLAGS}'
+                cmd = 'gcc -c {} {}'.format(cf, DEFAULT_CFLAGS)
                 ret = await self.run_subproc(cmd)
                 if ret != 0:  # stop if gcc has failed
                     return ret
             cfiles = ' '.join(map(lambda p: shlex.quote(str(p)), cfiles))
             ofiles = ' '.join(map(lambda p: shlex.quote(str(p)), ofiles))
-            cmd = f'gcc {ofiles} {DEFAULT_LDFLAGS} -o ./main'
+            cmd = 'gcc {} {} -o ./main'.format(ofiles, DEFAULT_LDFLAGS)
             return await self.run_subproc(cmd)
         else:
             log.error('cannot find build script ("Makefile") '
@@ -70,9 +70,9 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.c', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = (
-                f'gcc {tmpf.name} {DEFAULT_CFLAGS} -o ./main {DEFAULT_LDFLAGS}'
-                f'&& ./main')
+            cmd = 'gcc {} {} -o ./main {} && ./main'.format(
+                tmpf.name, DEFAULT_CFLAGS, DEFAULT_LDFLAGS,
+            )
             return await self.run_subproc(cmd)
 
     async def complete(self, data):

@@ -35,7 +35,7 @@ class Runner(BaseRunner):
         if Path('main.go').is_file():
             gofiles = Path('.').glob('**/*.go')
             gofiles = ' '.join(map(lambda p: shlex.quote(str(p)), gofiles))
-            cmd = f'go build -o main {DEFAULT_BFLAGS} {gofiles}'
+            cmd = 'go build -o main {} {}'.format(DEFAULT_BFLAGS, gofiles)
             return await self.run_subproc(cmd)
         else:
             log.error('cannot find main file ("main.go").')
@@ -52,7 +52,7 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.go', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = f'go run {tmpf.name}'
+            cmd = 'go run {}'.format(tmpf.name)
             return await self.run_subproc(cmd)
 
     async def complete(self, data):

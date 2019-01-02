@@ -46,7 +46,7 @@ class Runner(BaseRunner):
         with tempfile.NamedTemporaryFile(suffix='.jl', dir='.') as tmpf:
             tmpf.write(code_text.encode('utf8'))
             tmpf.flush()
-            cmd = f'julia {tmpf.name}'
+            cmd = 'julia {}'.format(tmpf.name)
             return await self.run_subproc(cmd)
 
     async def complete(self, data):
