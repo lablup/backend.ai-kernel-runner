@@ -6,6 +6,14 @@ A common base runner for various programming languages.
 It manages an internal task queue so that multiple command/code execution requests
 are processed in the FIFO order, without garbling the console output.
 
+NOTICE
+------
+
+This repository is now archived and read-only.
+
+The source code is moved to a subtree of `backend.ai-agent <https://github.com/lablup/backend.ai-agent/tree/master/src/ai/backend/kernel>`_ source tree, to keep the integration with the Backend.AI Agent tight and synchronize the updates.
+This change became possible because the Backend.AI Agent now combines a separate kernel-runner runtime volume and the bind-mount of its ``ai.backend.kernel`` package directory when spawning new containers.
+Please refer the agent repository for latest updates.
 
 How to write a new computation kernel
 -------------------------------------
